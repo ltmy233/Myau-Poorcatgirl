@@ -1,0 +1,12 @@
+[
+  {
+    "modid": "${modid}",
+    "name": "哇猫娘喵喵喵喵喵",
+    "description": "哇猫娘喵喵喵喵喵",
+    "version": "${version}",
+    "mcversion": "1.8.9",
+    "authorList": [
+      "ltmy_233"
+    ]
+  }
+]
