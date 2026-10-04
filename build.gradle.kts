@@ -78,6 +78,22 @@ dependencies {
     // If you don't want to log in with your real minecraft account, remove this line
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
 }
+// Essential jar: compile-time only, needed by the optional MixinGameProfileManager compat mixin
+val essentialForCompile: File? = sequenceOf(
+    file("libs/essential-compile.jar"),
+    *fileTree("D:/PCL/PCL/versions") { include("**/essential/Essential*.jar") }.files.toTypedArray()
+).firstOrNull { it.isFile }
+if (essentialForCompile != null) {
+    dependencies { compileOnly(files(essentialForCompile)) }
+} else {
+    println("WARNING: Essential jar not found, compat mixin will not compile")
+}
+// Sidebar Revamp jar: compile-time only, needed by MixinGuiSidebar (scoreboard rounding)
+if (file("libs/sidebar-revamp.jar").isFile) {
+    dependencies { compileOnly(files("libs/sidebar-revamp.jar")) }
+} else {
+    println("WARNING: sidebar-revamp.jar not found, MixinGuiSidebar will not compile")
+}
 // Tasks:
 tasks.withType(JavaCompile::class) {
     options.encoding = "UTF-8"

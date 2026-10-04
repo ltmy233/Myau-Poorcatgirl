@@ -150,6 +150,7 @@ public class RenderUtil {
             return;
         }
         RenderUtil.setColor(color);
+        GL11.glDisable(GL11.GL_POLYGON_SMOOTH);
         GL11.glBegin(GL11.GL_POLYGON);
         GL11.glVertex2f(x1, y1);
         GL11.glVertex2f(x1, y2);
@@ -179,7 +180,7 @@ public class RenderUtil {
     }
 
     public static void drawOutlineRect(float x1, float y1, float x2, float y2, float lineWidth, int backgroundColor, int lineColor) {
-        RenderUtil.drawRect(0.0f, 0.0f, x2, 27.0f, backgroundColor);
+        RenderUtil.drawRect(x1, y1, x2, y2, backgroundColor);
         if (lineColor == 0) {
             return;
         }
@@ -217,6 +218,7 @@ public class RenderUtil {
     }
 
     public static void drawLine3D(Vec3 start, double endX, double endY, double endZ, float red, float green, float blue, float alpha, float lineWidth) {
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LINE_BIT | GL11.GL_COLOR_BUFFER_BIT);
         GlStateManager.pushMatrix();
         GlStateManager.color(red, green, blue, alpha);
         boolean bl = RenderUtil.mc.gameSettings.viewBobbing;
@@ -234,6 +236,7 @@ public class RenderUtil {
         GL11.glLineWidth(2.0f);
         GlStateManager.resetColor();
         GlStateManager.popMatrix();
+        GL11.glPopAttrib();
     }
 
     public static void drawArrow(float centerX, float centerY, float angle, float length, float lineWidth, int color) {
@@ -570,27 +573,32 @@ public class RenderUtil {
         }
 
         enableRenderState();
-        setColor(color);
-        GL11.glEnable(GL11.GL_POLYGON_SMOOTH);
-        GL11.glHint(GL11.GL_POLYGON_SMOOTH_HINT, GL11.GL_NICEST);
-
-        drawQuadNoState(x + radius, y, x + width - radius, y + height);
-        drawQuadNoState(x, y + radius, x + radius, y + height - radius);
-        drawQuadNoState(x + width - radius, y + radius, x + width, y + height - radius);
-
-        if (roundTopLeft) drawCornerFan(x + radius, y + radius, radius, 180.0D, 270.0D);
-        else drawQuadNoState(x, y, x + radius, y + radius);
-
-        if (roundTopRight) drawCornerFan(x + width - radius, y + radius, radius, 270.0D, 360.0D);
-        else drawQuadNoState(x + width - radius, y, x + width, y + radius);
-
-        if (roundBottomRight) drawCornerFan(x + width - radius, y + height - radius, radius, 0.0D, 90.0D);
-        else drawQuadNoState(x + width - radius, y + height - radius, x + width, y + height);
-
-        if (roundBottomLeft) drawCornerFan(x + radius, y + height - radius, radius, 90.0D, 180.0D);
-        else drawQuadNoState(x, y + height - radius, x + radius, y + height);
-
         GL11.glDisable(GL11.GL_POLYGON_SMOOTH);
+        setColor(color);
+
+        double right = x + width;
+        double bottom = y + height;
+        int segs = Math.max(10, (int) Math.ceil(radius * 4.0D));
+
+        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
+        GL11.glVertex2d(x + width * 0.5D, y + height * 0.5D);
+
+        if (roundTopLeft) cornerArc(x + radius, y + radius, radius, 180.0D, 270.0D, segs);
+        else GL11.glVertex2d(x, y);
+
+        if (roundTopRight) cornerArc(right - radius, y + radius, radius, 270.0D, 360.0D, segs);
+        else GL11.glVertex2d(right, y);
+
+        if (roundBottomRight) cornerArc(right - radius, bottom - radius, radius, 0.0D, 90.0D, segs);
+        else GL11.glVertex2d(right, bottom);
+
+        if (roundBottomLeft) cornerArc(x + radius, bottom - radius, radius, 90.0D, 180.0D, segs);
+        else GL11.glVertex2d(x, bottom);
+
+        if (roundTopLeft) GL11.glVertex2d(x, y + radius);
+        else GL11.glVertex2d(x, y);
+
+        GL11.glEnd();
         disableRenderState();
     }
 
@@ -653,23 +661,10 @@ public class RenderUtil {
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
-    private static void drawQuadNoState(double x1, double y1, double x2, double y2) {
-        GL11.glBegin(GL11.GL_QUADS);
-        GL11.glVertex2d(x1, y1);
-        GL11.glVertex2d(x2, y1);
-        GL11.glVertex2d(x2, y2);
-        GL11.glVertex2d(x1, y2);
-        GL11.glEnd();
-    }
-
-    private static void drawCornerFan(double centerX, double centerY, double radius, double start, double end) {
-        int segments = Math.max(12, (int) Math.ceil(radius * 3.0D));
-        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
-        GL11.glVertex2d(centerX, centerY);
-        for (int i = 0; i <= segments; i++) {
-            double angle = Math.toRadians(start + (end - start) * i / segments);
-            GL11.glVertex2d(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
+    private static void cornerArc(double cx, double cy, double radius, double start, double end, int segs) {
+        for (int i = 0; i <= segs; i++) {
+            double angle = Math.toRadians(start + (end - start) * i / segs);
+            GL11.glVertex2d(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
         }
-        GL11.glEnd();
     }
 }

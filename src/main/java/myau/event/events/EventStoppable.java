@@ -1,9 +1,8 @@
 package myau.event.events;
 
 /**
- * The most basic form of an stoppable Event.
- * Stoppable events are called seperate from other events and the calling of methods is stopped
- * as soon as the EventStoppable is stopped.
+ * 能喊停的事件的基类。
+ * 这类事件单独走一条路，一旦有人调了 stop()，后面的方法就不再往下叫了。
  *
  * @author DarkMagician6
  * @since 26-9-13
@@ -12,22 +11,20 @@ public abstract class EventStoppable implements Event {
     private boolean stopped;
 
     /**
-     * No need for the constructor to be public.
+     * 只给自己人用，没必要开放。
      */
     protected EventStoppable() {
     }
 
     /**
-     * Sets the stopped state to true.
+     * 喊停。之后的监听者就不会再被叫到了。
      */
     public void stop() {
         stopped = true;
     }
 
     /**
-     * Checks the stopped boolean.
-     *
-     * @return True if the EventStoppable is stopped.
+     * @return 已经停了就返回 true。
      */
     public boolean isStopped() {
         return stopped;

@@ -21,6 +21,7 @@ import org.lwjgl.opengl.GL11;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -28,6 +29,25 @@ import java.util.stream.Collectors;
 public class HUD extends Module {
     private static final Minecraft mc = Minecraft.getMinecraft();
     private List<Module> activeModules = new ArrayList<>();
+    private final LinkedHashMap<Module, ListEntry> listAnim = new LinkedHashMap<>();
+    private final List<Module> listOrder = new ArrayList<>();
+    private long lastAnimNanos = -1L;
+    private boolean listPrimed = false;
+    private long nextColorOffset = 0L;
+
+    private static class ListEntry {
+        final Module module;
+        float progress;
+        float y;
+        float targetY;
+        long colorOffset;
+        boolean removing;
+        boolean snap = true;
+
+        ListEntry(Module module) {
+            this.module = module;
+        }
+    }
     public final ModeProperty colorMode = new ModeProperty(
             "color", 3, new String[]{"RAINBOW", "CHROMA", "ASTOLFO", "CUSTOM1", "CUSTOM12", "CUSTOM123"}
     );
@@ -55,6 +75,7 @@ public class HUD extends Module {
     public final BooleanProperty rounded = new BooleanProperty("rounded", true);
     public final FloatProperty cornerRadius = new FloatProperty("corner-radius", 4.0F, 1.0F, 8.0F, () -> rounded.getValue());
     public final FloatProperty padding = new FloatProperty("padding", 2.0F, 0.0F, 6.0F);
+    public final BooleanProperty smoothList = new BooleanProperty("smooth-list", true);
 
     private String getModuleName(Module module) {
         String moduleName = module.getName();
@@ -151,7 +172,94 @@ public class HUD extends Module {
     public void onTick(TickEvent event) {
         if (this.isEnabled() && event.getType() == EventType.POST) {
             this.activeModules = Myau.moduleManager.modules.values().stream().filter(module -> module.isEnabled() && !module.isHidden()).sorted(Comparator.comparingInt(this::getModuleWidth).reversed()).collect(Collectors.<Module>toList());
+            if (this.smoothList.getValue()) {
+                this.syncListAnim();
+            } else {
+                this.listAnim.clear();
+                this.listOrder.clear();
+                this.listPrimed = false;
+            }
         }
+    }
+
+    private void syncListAnim() {
+        for (Module module : this.listOrder) {
+            ListEntry entry = this.listAnim.get(module);
+            if (entry != null) {
+                entry.removing = !this.activeModules.contains(module);
+            }
+        }
+        for (Module module : this.activeModules) {
+            if (this.listAnim.containsKey(module)) {
+                continue;
+            }
+            ListEntry entry = new ListEntry(module);
+            entry.progress = this.listPrimed ? 0.0F : 1.0F;
+            entry.snap = true;
+            entry.colorOffset = this.nextColorOffset++;
+            this.listAnim.put(module, entry);
+            int want = this.activeModules.indexOf(module);
+            int seen = 0;
+            int pos = this.listOrder.size();
+            for (int i = 0; i < this.listOrder.size(); i++) {
+                ListEntry other = this.listAnim.get(this.listOrder.get(i));
+                if (other == null || other.removing) {
+                    continue;
+                }
+                if (seen == want) {
+                    pos = i;
+                    break;
+                }
+                seen++;
+            }
+            this.listOrder.add(pos, module);
+        }
+        for (int i = this.listOrder.size() - 1; i >= 0; i--) {
+            ListEntry entry = this.listAnim.get(this.listOrder.get(i));
+            if (entry != null && entry.removing && entry.progress <= 0.0F) {
+                this.listOrder.remove(i);
+                this.listAnim.remove(entry.module);
+            }
+        }
+        this.listPrimed = true;
+    }
+
+    private void animateList(float dt, float baseY, float rowStep, float dir) {
+        for (int i = 0; i < this.listOrder.size(); i++) {
+            ListEntry entry = this.listAnim.get(this.listOrder.get(i));
+            if (entry == null) {
+                continue;
+            }
+            if (!entry.removing) {
+                entry.targetY = baseY + i * rowStep * dir;
+            }
+            float target = entry.removing ? 0.0F : 1.0F;
+            float duration = entry.removing ? 0.22F : 0.26F;
+            if (entry.progress < target) {
+                entry.progress = Math.min(target, entry.progress + dt / duration);
+            } else if (entry.progress > target) {
+                entry.progress = Math.max(target, entry.progress - dt / duration);
+            }
+            if (entry.snap) {
+                entry.y = entry.targetY;
+                entry.snap = false;
+            } else {
+                entry.y += (entry.targetY - entry.y) * (1.0F - (float) Math.exp(-dt / 0.05F));
+                if (Math.abs(entry.targetY - entry.y) < 0.005F) {
+                    entry.y = entry.targetY;
+                }
+            }
+        }
+    }
+
+    private static float smoothstep(float t) {
+        t = Math.max(0.0F, Math.min(1.0F, t));
+        return t * t * (3.0F - 2.0F * t);
+    }
+
+    private static int colorWithAlpha(int color, float alpha) {
+        int a = (int) (((color >>> 24) & 0xFF) * alpha);
+        return (color & 0x00FFFFFF) | (a << 24);
     }
 
     @EventTarget
@@ -187,105 +295,40 @@ public class HUD extends Module {
             GlStateManager.scale(this.scale.getValue(), this.scale.getValue(), 0.0F);
             long l = System.currentTimeMillis();
             long offset = 0L;
-            for (Module module : this.activeModules) {
-                String moduleName = this.getModuleName(module);
-                String[] moduleSuffix = this.getModuleSuffix(module);
-                float totalWidth = (float) (this.calculateStringWidth(moduleName, moduleSuffix) - (this.shadow.getValue() ? 0 : 1));
-                int color = this.getColor(l, offset).getRGB();
-                float pad = this.padding.getValue();
-                float bgX1 = x / this.scale.getValue() - 1.0F - pad - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
-                float bgY1 = y / this.scale.getValue() - pad - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F));
-                float bgX2 = x / this.scale.getValue() + 1.0F + pad + (this.posX.getValue() == 0 ? totalWidth : 0.0F);
-                float bgY2 = y / this.scale.getValue() + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (offset == 0L ? 1.0F : 0.0F));
-                RenderUtil.enableRenderState();
-                if (this.background.getValue() > 0) {
-                    int bgColor = new Color(0.0F, 0.0F, 0.0F, this.background.getValue().floatValue() / 100.0F).getRGB();
-                    if (this.rounded.getValue()) {
-                        float bgW = bgX2 - bgX1;
-                        float bgH = bgY2 - bgY1;
-                        float rad = this.cornerRadius.getValue();
-                        boolean isFirst = (offset == 0L);
-                        boolean isLast = (offset == this.activeModules.size() - 1);
-                        boolean sideLeft = this.posX.getValue() == 1;
-                        boolean sideRight = this.posX.getValue() == 0;
-                        boolean isTopEntry = (this.posY.getValue() == 0) ? isFirst : isLast;
-                        boolean isBottomEntry = (this.posY.getValue() == 0) ? isLast : isFirst;
-                        RenderUtil.drawRoundedRect(
-                                bgX1, bgY1, bgW, bgH, rad, bgColor,
-                                sideLeft && isTopEntry, sideRight && isTopEntry,
-                                sideLeft && isBottomEntry, sideRight && isBottomEntry
-                        );
-                    } else {
-                        RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, bgColor);
-                    }
-                }
-                if (this.showBar.getValue()) {
-                    if (this.shadow.getValue()) {
-                        RenderUtil.drawRect(
-                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -3.0F : 1.0F),
-                                y / this.scale.getValue() - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : 1.0F),
-                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -2.0F : 2.0F),
-                                y / this.scale.getValue() + height + (this.posY.getValue() == 0 ? 1.0F : (offset == 0L ? 1.0F : 0.0F)),
-                                color
-                        );
-                        RenderUtil.drawRect(
-                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -2.0F : 2.0F),
-                                y / this.scale.getValue() - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : 1.0F),
-                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -1.0F : 3.0F),
-                                y / this.scale.getValue() + height + (this.posY.getValue() == 0 ? 1.0F : (offset == 0L ? 1.0F : 0.0F)),
-                                (color & 16579836) >> 2 | color & 0xFF000000
-                        );
-                    } else {
-                        RenderUtil.drawRect(
-                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -2.0F : 1.0F),
-                                y / this.scale.getValue() - (this.posY.getValue() == 0 ? (offset == 0L ? 1.0F : 0.0F) : 0.0F),
-                                x / this.scale.getValue() + (this.posX.getValue() == 0 ? -1.0F : 2.0F),
-                                y / this.scale.getValue() + height + (this.posY.getValue() == 0 ? 0.0F : (offset == 0L ? 1.0F : 0.0F)),
-                                color
-                        );
-                    }
-                }
-                RenderUtil.disableRenderState();
-                GlStateManager.disableDepth();
-                if (this.shadow.getValue()) {
-                    mc.fontRendererObj
-                            .drawStringWithShadow(moduleName, x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F), y / this.scale.getValue(), color);
-                } else {
-                    mc.fontRendererObj
-                            .drawString(
-                                    moduleName,
-                                    x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F),
-                                    y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                    color,
-                                    false
-                            );
-                }
-                if (this.suffixes.getValue() && moduleSuffix.length > 0) {
-                    float width = (float) mc.fontRendererObj.getStringWidth(moduleName) + 3.0F;
-                    for (String string : moduleSuffix) {
-                        if (this.shadow.getValue()) {
-                            mc.fontRendererObj
-                                    .drawStringWithShadow(
-                                            string,
-                                            x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                            y / this.scale.getValue(),
-                                            ChatColors.GRAY.toAwtColor()
-                                    );
-                        } else {
-                            mc.fontRendererObj
-                                    .drawString(
-                                            string,
-                                            x / this.scale.getValue() - (this.posX.getValue() == 1 ? totalWidth : 0.0F) + width,
-                                            y / this.scale.getValue() + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
-                                            ChatColors.GRAY.toAwtColor(),
-                                            false
-                                    );
+            float rowStep = (height + (this.shadow.getValue() ? 1.0F : 0.0F) + this.padding.getValue() * 2.0F) * this.scale.getValue();
+            float dir = this.posY.getValue() == 0 ? 1.0F : -1.0F;
+            if (this.smoothList.getValue()) {
+                long now = System.nanoTime();
+                float dt = this.lastAnimNanos < 0L ? 0.0F : Math.min((now - this.lastAnimNanos) / 1.0E9F, 0.05F);
+                this.lastAnimNanos = now;
+                this.animateList(dt, y, rowStep, dir);
+                int firstActive = -1;
+                int lastActive = -1;
+                for (int i = 0; i < this.listOrder.size(); i++) {
+                    ListEntry entry = this.listAnim.get(this.listOrder.get(i));
+                    if (entry != null && !entry.removing) {
+                        if (firstActive < 0) {
+                            firstActive = i;
                         }
-                        width += (float) mc.fontRendererObj.getStringWidth(string) + (this.shadow.getValue() ? 3.0F : 2.0F);
+                        lastActive = i;
                     }
                 }
-                y += (height + (this.shadow.getValue() ? 1.0F : 0.0F) + this.padding.getValue() * 2.0F) * this.scale.getValue() * (this.posY.getValue() == 0 ? 1.0F : -1.0F);
-                offset++;
+                for (int i = 0; i < this.listOrder.size(); i++) {
+                    Module module = this.listOrder.get(i);
+                    ListEntry entry = this.listAnim.get(module);
+                    if (entry == null || entry.progress <= 0.0F) {
+                        continue;
+                    }
+                    float s = smoothstep(entry.progress);
+                    this.drawListEntry(module, x, entry.y, s, i == firstActive, i == lastActive, entry.colorOffset, l);
+                }
+                offset = this.activeModules.size();
+            } else {
+                for (Module module : this.activeModules) {
+                    this.drawListEntry(module, x, y, 1.0F, offset == 0L, offset == this.activeModules.size() - 1, offset, l);
+                    y += rowStep * dir;
+                    offset++;
+                }
             }
             if (this.blinkTimer.getValue()) {
                 BlinkModules blinkingModule = Myau.blinkManager.getBlinkingModule();
@@ -311,6 +354,114 @@ public class HUD extends Module {
             GlStateManager.popMatrix();
         }
         renderNotifications();
+    }
+
+    private void drawListEntry(Module module, float x, float entryY, float s, boolean isFirst, boolean isLast, long colorOffset, long time) {
+        String moduleName = this.getModuleName(module);
+        String[] moduleSuffix = this.getModuleSuffix(module);
+        float height = (float) mc.fontRendererObj.FONT_HEIGHT - 1.0F;
+        float totalWidth = (float) (this.calculateStringWidth(moduleName, moduleSuffix) - (this.shadow.getValue() ? 0 : 1));
+        int color = colorWithAlpha(this.getColor(time, colorOffset).getRGB(), s);
+        float pad = this.padding.getValue();
+        float slide = (1.0F - s) * 18.0F * (this.posX.getValue() == 0 ? -1.0F : 1.0F);
+        float xDraw = x / this.scale.getValue() + slide;
+        float yDraw = entryY / this.scale.getValue();
+        float bgX1 = xDraw - 1.0F - pad - (this.posX.getValue() == 0 ? 0.0F : totalWidth);
+        float bgY1 = yDraw - pad - (this.posY.getValue() == 0 ? (isFirst ? 1.0F : 0.0F) : (this.shadow.getValue() ? 1.0F : 0.0F));
+        float bgX2 = xDraw + 1.0F + pad + (this.posX.getValue() == 0 ? totalWidth : 0.0F);
+        float bgY2 = yDraw + height + pad + (this.posY.getValue() == 0 ? (this.shadow.getValue() ? 1.0F : 0.0F) : (isFirst ? 1.0F : 0.0F));
+        if (s < 1.0F) {
+            float w = bgX2 - bgX1;
+            if (this.posX.getValue() == 0) {
+                bgX2 = bgX1 + w * s;
+            } else {
+                bgX1 = bgX2 - w * s;
+            }
+        }
+        RenderUtil.enableRenderState();
+        if (this.background.getValue() > 0) {
+            int bgColor = new Color(0.0F, 0.0F, 0.0F, this.background.getValue().floatValue() / 100.0F * s).getRGB();
+            if (this.rounded.getValue()) {
+                float bgW = bgX2 - bgX1;
+                float bgH = bgY2 - bgY1;
+                float rad = this.cornerRadius.getValue();
+                boolean sideLeft = this.posX.getValue() == 1;
+                boolean sideRight = this.posX.getValue() == 0;
+                RenderUtil.drawRoundedRect(
+                        bgX1, bgY1, bgW, bgH, rad, bgColor,
+                        sideLeft, sideRight,
+                        sideLeft, sideRight
+                );
+            } else {
+                RenderUtil.drawRect(bgX1, bgY1, bgX2, bgY2, bgColor);
+            }
+        }
+        if (this.showBar.getValue()) {
+            if (this.shadow.getValue()) {
+                RenderUtil.drawRect(
+                        xDraw + (this.posX.getValue() == 0 ? -3.0F : 1.0F),
+                        yDraw - (this.posY.getValue() == 0 ? (isFirst ? 1.0F : 0.0F) : 1.0F),
+                        xDraw + (this.posX.getValue() == 0 ? -2.0F : 2.0F),
+                        yDraw + height + (this.posY.getValue() == 0 ? 1.0F : (isFirst ? 1.0F : 0.0F)),
+                        color
+                );
+                RenderUtil.drawRect(
+                        xDraw + (this.posX.getValue() == 0 ? -2.0F : 2.0F),
+                        yDraw - (this.posY.getValue() == 0 ? (isFirst ? 1.0F : 0.0F) : 1.0F),
+                        xDraw + (this.posX.getValue() == 0 ? -1.0F : 3.0F),
+                        yDraw + height + (this.posY.getValue() == 0 ? 1.0F : (isFirst ? 1.0F : 0.0F)),
+                        (color & 16579836) >> 2 | color & 0xFF000000
+                );
+            } else {
+                RenderUtil.drawRect(
+                        xDraw + (this.posX.getValue() == 0 ? -2.0F : 1.0F),
+                        yDraw - (this.posY.getValue() == 0 ? (isFirst ? 1.0F : 0.0F) : 0.0F),
+                        xDraw + (this.posX.getValue() == 0 ? -1.0F : 2.0F),
+                        yDraw + height + (this.posY.getValue() == 0 ? 0.0F : (isFirst ? 1.0F : 0.0F)),
+                        color
+                );
+            }
+        }
+        RenderUtil.disableRenderState();
+        GlStateManager.disableDepth();
+        boolean fade = s < 1.0F;
+        if (fade) {
+            GlStateManager.enableBlend();
+            GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        }
+        float textX = xDraw - (this.posX.getValue() == 1 ? totalWidth : 0.0F);
+        if (this.shadow.getValue()) {
+            mc.fontRendererObj.drawStringWithShadow(moduleName, textX, yDraw, color);
+        } else {
+            mc.fontRendererObj.drawString(
+                    moduleName,
+                    textX,
+                    yDraw + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
+                    color,
+                    false
+            );
+        }
+        if (this.suffixes.getValue() && moduleSuffix.length > 0) {
+            int suffixColor = colorWithAlpha(ChatColors.GRAY.toAwtColor(), s);
+            float width = (float) mc.fontRendererObj.getStringWidth(moduleName) + 3.0F;
+            for (String string : moduleSuffix) {
+                if (this.shadow.getValue()) {
+                    mc.fontRendererObj.drawStringWithShadow(string, textX + width, yDraw, suffixColor);
+                } else {
+                    mc.fontRendererObj.drawString(
+                            string,
+                            textX + width,
+                            yDraw + (this.posY.getValue() == 1 ? 1.0F : 0.0F),
+                            suffixColor,
+                            false
+                    );
+                }
+                width += (float) mc.fontRendererObj.getStringWidth(string) + (this.shadow.getValue() ? 3.0F : 2.0F);
+            }
+        }
+        if (fade) {
+            GlStateManager.disableBlend();
+        }
     }
 
     private void renderNotifications() {

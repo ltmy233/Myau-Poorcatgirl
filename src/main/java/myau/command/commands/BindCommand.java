@@ -94,7 +94,7 @@ public class BindCommand extends Command {
     }
 
     private int getMouseButtonIndex(String buttonName) {
-        // Handle numbered format (MOUSE0, MOUSE1, etc.)
+        // MOUSE0、MOUSE1 这种带数字的写法单独认
         if (buttonName.startsWith("MOUSE")) {
             try {
                 String numStr = buttonName.substring(5);

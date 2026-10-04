@@ -55,36 +55,36 @@ public class Freeze extends Module {
 
         Packet<?> packet = event.getPacket();
 
-        // Check for S08 flag (teleport packet)
+        // 认一下 S08（传送包）
         if (!this.delaying && packet instanceof S08PacketPlayerPosLook) {
             this.s08 = true;
         }
 
-        // Check for velocity packet targeting player
+        // 冲着玩家来的速度包
         if (packet instanceof S12PacketEntityVelocity) {
             S12PacketEntityVelocity s12 = (S12PacketEntityVelocity) packet;
             if (s12.getEntityID() == mc.thePlayer.getEntityId()) {
-                // Ignore velocity right after teleport
+                // 刚传送完紧接着来的那一下速度，直接忽略
                 if (this.s08) {
                     this.s08 = false;
                     return;
                 }
-                // Start delaying
+                // 否则开始扣包
                 this.delaying = true;
             }
         }
         
-        // Check for damage (entity status packet with hurt animation)
+        // 受击了（带受击动画的实体状态包），也扣
         if (packet instanceof S19PacketEntityStatus) {
             S19PacketEntityStatus s19 = (S19PacketEntityStatus) packet;
             if (s19.getEntity(mc.theWorld) != null && 
                 s19.getEntity(mc.theWorld).equals(mc.thePlayer) && 
-                s19.getOpCode() == 2) { // OpCode 2 = hurt animation
+                s19.getOpCode() == 2) { // OpCode 2 就是受击动画
                 this.delaying = true;
             }
         }
 
-        // Buffer relevant packets when delaying
+        // 正在扣包期间，把相关的包都攒起来
         if (this.delaying && (packet instanceof S12PacketEntityVelocity 
                 || packet instanceof S32PacketConfirmTransaction 
                 || packet instanceof S08PacketPlayerPosLook)) {
@@ -106,13 +106,13 @@ public class Freeze extends Module {
         }
 
         if (event.getType() == EventType.POST) {
-            // Check timeout
+            // 扣太久了就放出去，别把包憋死
             if (this.delaying && ++this.timeout >= this.maxTimeout.getValue()) {
                 this.flush();
                 ChatUtil.sendFormatted(Myau.clientName + "&cFreeze timed out.");
             }
 
-            // Reset S08 flag
+            // 这一 tick 的传送标记清掉，下一 tick 重新认
             this.s08 = false;
         }
     }

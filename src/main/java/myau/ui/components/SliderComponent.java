@@ -5,6 +5,7 @@ import myau.Myau;
 import myau.module.modules.HUD;
 import myau.ui.ClickGui;
 import myau.ui.Component;
+import myau.ui.Lang;
 import myau.ui.callback.GuiInput;
 import myau.ui.dataset.Slider;
 import net.minecraft.client.Minecraft;
@@ -44,7 +45,7 @@ public class SliderComponent implements Component {
         Gui.drawRect(sliderStart, this.parentModule.category.getY() + this.offsetY + 11, sliderEnd, this.parentModule.category.getY() + this.offsetY + 15, ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get()).getRGB());
         GL11.glPushMatrix();
         GL11.glScaled(0.5D, 0.5D, 0.5D);
-        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(this.slider.getName() + ": " + this.slider.getValueColorString(), (float) ((int) ((float) (this.parentModule.category.getX() + 4) * 2.0F)), (float) ((int) ((float) (this.parentModule.category.getY() + this.offsetY + 3) * 2.0F)), -1);
+        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(Lang.t(this.slider.getName()) + ": " + this.slider.getValueColorString(), (float) ((int) ((float) (this.parentModule.category.getX() + 4) * 2.0F)), (float) ((int) ((float) (this.parentModule.category.getY() + this.offsetY + 3) * 2.0F)), -1);
         GL11.glPopMatrix();
     }
 
@@ -106,7 +107,7 @@ public class SliderComponent implements Component {
 
     public void mouseDown(int x, int y, int button) {
         if (this.isTextHovered(x, y) && button == 0 && this.parentModule.panelExpand) {
-            GuiInput.prompt(slider.getName().replace("-", " "), slider.getValueString(), slider::setValueString, ClickGui.getInstance());
+            GuiInput.prompt(Lang.t(slider.getName()).replace("-", " "), slider.getValueString(), slider::setValueString, ClickGui.getInstance());
             return;
         }
 

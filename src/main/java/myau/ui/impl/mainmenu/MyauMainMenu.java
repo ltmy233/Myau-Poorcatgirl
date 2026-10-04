@@ -50,6 +50,10 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback {
     private GuiButton modButton;
     private boolean field_183502_L;
     private GuiScreen field_183503_M;
+    private int glassX;
+    private int glassY;
+    private int glassW;
+    private int glassH;
 
     public MyauMainMenu() {
         this.openGLWarning2 = field_96138_a;
@@ -77,17 +81,41 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback {
     }
 
     public void initGui() {
-        int j = this.height / 4 + 48;
-        int i = 24;
+        int bw = 100;
+        int bh = 16;
+        int gap = 4;
+        int rows = this.mc.isDemo() ? 4 : 6;
+        int rx = this.width - 12 - bw;
+        int colH = rows * bh + (rows - 1) * gap;
+        int y = (this.height - colH) / 2;
+        this.glassX = rx - 7;
+        this.glassY = y - 7;
+        this.glassW = bw + 14;
+        this.glassH = colH + 14;
 
         if (this.mc.isDemo()) {
-            this.addDemoButtons(j, 24);
+            this.buttonList.add(new GuiButton(11, rx, y, bw, bh, I18n.format("menu.playdemo")));
+            y += bh + gap;
+            this.buttonList.add(this.buttonResetDemo = new GuiButton(12, rx, y, bw, bh, I18n.format("menu.resetdemo")));
+            ISaveFormat isaveformat = this.mc.getSaveLoader();
+            WorldInfo worldinfo = isaveformat.getWorldInfo("Demo_World");
+            if (worldinfo == null) {
+                this.buttonResetDemo.enabled = false;
+            }
+            y += bh + gap;
         } else {
-            this.addSingleplayerMultiplayerButtons(j, 24);
+            this.buttonList.add(new GuiButton(1, rx, y, bw, bh, I18n.format("menu.singleplayer")));
+            y += bh + gap;
+            this.buttonList.add(new GuiButton(2, rx, y, bw, bh, I18n.format("menu.multiplayer")));
+            y += bh + gap;
+            this.buttonList.add(this.modButton = new GuiButton(6, rx, y, bw, bh, I18n.format("fml.menu.mods")));
+            y += bh + gap;
+            this.buttonList.add(this.altsButton = new GuiButton(14, rx, y, bw, bh, "Alt Manager"));
+            y += bh + gap;
         }
-
-        this.buttonList.add(new GuiButton(0, this.width / 2 - 100, j + 72 + 12, 98, 20, I18n.format("menu.options")));
-        this.buttonList.add(new GuiButton(4, this.width / 2 + 2, j + 72 + 12, 98, 20, I18n.format("menu.quit")));
+        this.buttonList.add(new GuiButton(0, rx, y, bw, bh, I18n.format("menu.options")));
+        y += bh + gap;
+        this.buttonList.add(new GuiButton(4, rx, y, bw, bh, I18n.format("menu.quit")));
 
         synchronized (this) {
             this.field_92023_s = this.fontRendererObj.getStringWidth(this.openGLWarning1);
@@ -111,23 +139,6 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback {
         if (this.func_183501_a()) {
             this.field_183503_M.setGuiSize(this.width, this.height);
             this.field_183503_M.initGui();
-        }
-    }
-
-    private void addSingleplayerMultiplayerButtons(int p_73969_1_, int p_73969_2_) {
-        this.buttonList.add(new GuiButton(1, this.width / 2 - 100, p_73969_1_, I18n.format("menu.singleplayer")));
-        this.buttonList.add(new GuiButton(2, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 1, I18n.format("menu.multiplayer")));
-        this.buttonList.add(this.altsButton = new GuiButton(14, this.width / 2 + 2, p_73969_1_ + p_73969_2_ * 2, 98, 20, "Alt Manager"));
-        this.buttonList.add(this.modButton = new GuiButton(6, this.width / 2 - 100, p_73969_1_ + p_73969_2_ * 2, 98, 20, I18n.format("fml.menu.mods")));
-    }
-
-    private void addDemoButtons(int p_73972_1_, int p_73972_2_) {
-        this.buttonList.add(new GuiButton(11, this.width / 2 - 100, p_73972_1_, I18n.format("menu.playdemo")));
-        this.buttonList.add(this.buttonResetDemo = new GuiButton(12, this.width / 2 - 100, p_73972_1_ + p_73972_2_ * 1, I18n.format("menu.resetdemo")));
-        ISaveFormat isaveformat = this.mc.getSaveLoader();
-        WorldInfo worldinfo = isaveformat.getWorldInfo("Demo_World");
-        if (worldinfo == null) {
-            this.buttonResetDemo.enabled = false;
         }
     }
 
@@ -169,11 +180,13 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback {
         }
     }
 
-    // 加载并绘制背景图
+    // 把背景图调出来画上，视频壁纸还没就绪就先用静态图顶着
     private void drawBackground() {
         ScaledResolution sr = new ScaledResolution(mc);
         int w = sr.getScaledWidth();
         int h = sr.getScaledHeight();
+
+        if (myau.wallpaper.WallpaperPlayer.get().draw(sr)) return;
 
         if (bgTextureId < 0) {
             try {
@@ -231,19 +244,21 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback {
     }
 
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        drawBackground();
-        this.drawGradientRect(0, 0, this.width, this.height, -2130706433, 16777215);
+        myau.wallpaper.MenuBackground.draw(new ScaledResolution(mc));
+        myau.util.LiquidGlass.draw(this.glassX, this.glassY, this.glassW, this.glassH, 12.0F, this.width, this.height);
 
-        // 标题
-        String title = "Poorcatgirl";
-        GlStateManager.pushMatrix();
-        float scale = 3.5F;
-        GlStateManager.scale(scale, scale, scale);
-        int tw = this.fontRendererObj.getStringWidth(title);
-        this.fontRendererObj.drawStringWithShadow(title,
-                this.width / (2F * scale) - tw / 2F,
-                this.height / 8F / scale, 0xFFFFFF);
-        GlStateManager.popMatrix();
+        // 标题，能用渲染器就交给它，不行再退回老的硬画
+        if (!TitleRenderer.render(this.width, this.height)) {
+            String title = "Poorcatgirl";
+            GlStateManager.pushMatrix();
+            float scale = 3.5F;
+            GlStateManager.scale(scale, scale, scale);
+            int tw = this.fontRendererObj.getStringWidth(title);
+            this.fontRendererObj.drawStringWithShadow(title,
+                    this.width / (2F * scale) - tw / 2F,
+                    this.height / 8F / scale, 0xFFFFFF);
+            GlStateManager.popMatrix();
+        }
 
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
@@ -277,6 +292,7 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback {
     }
 
     public void onGuiClosed() {
+        myau.wallpaper.WallpaperPlayer.get().pause();
         if (this.field_183503_M != null) {
             this.field_183503_M.onGuiClosed();
         }

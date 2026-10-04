@@ -103,23 +103,23 @@ public class HitSelect extends Module {
     }
 
     private boolean prioritizeSecondHit(EntityLivingBase player, EntityLivingBase target) {
-        // If target is already hurt, allow the hit
+        // 对方已经在硬直了，这一下让它打出去
         if (target.hurtTime != 0) {
             return true;
         }
 
-        // If player hasn't recovered from hurt time, allow the hit
+        // 自己还没从受击硬直里缓过来，也放行
         if (player.hurtTime <= player.maxHurtTime - 1) {
             return true;
         }
 
-        // If too close, allow the hit
+        // 贴得太近了，别拦
         double dist = player.getDistanceToEntity(target);
         if (dist < 2.5) {
             return true;
         }
 
-        // If not moving towards each other, allow the hit
+        // 双方都不是朝着对方走的，说明这下不算，放行
         if (!this.isMovingTowards(target, player, 60.0)) {
             return true;
         }
@@ -128,49 +128,49 @@ public class HitSelect extends Module {
             return true;
         }
 
-        // Block the hit and fix motion
+        // 该拦了，顺手把位移修正回去
         this.fixMotion();
         return false;
     }
 
     private boolean prioritizeCriticalHits(EntityLivingBase player) {
-        // If on ground, allow the hit
+        // 脚踩在地上，出不了暴击，放行
         if (player.onGround) {
             return true;
         }
 
-        // If hurt, allow the hit
+        // 正在受击硬直中，放行
         if (player.hurtTime != 0) {
             return true;
         }
 
-        // If falling, allow the hit (for crits)
+        // 正在下落，这是暴击的条件，放行
         if (player.fallDistance > 0.0f) {
             return true;
         }
 
-        // Block the hit and fix motion
+        // 既不在下落也没硬直，拦下来并修正位移
         this.fixMotion();
         return false;
     }
 
     private boolean prioritizeWTapHits(EntityLivingBase player, boolean sprinting) {
-        // If against wall, allow the hit
+        // 撞在墙上了，位移本来就出不去，放行
         if (player.isCollidedHorizontally) {
             return true;
         }
 
-        // If not moving forward, allow the hit
+        // 前进键没按着，放行
         if (!mc.gameSettings.keyBindForward.isKeyDown()) {
             return true;
         }
 
-        // If already sprinting, allow the hit
+        // 已经在疾跑了，这下不归我管，放行
         if (sprinting) {
             return true;
         }
 
-        // Block the hit and fix motion
+        // 拦下来，顺便把位移修正回去
         this.fixMotion();
         return false;
     }
@@ -186,10 +186,10 @@ public class HitSelect extends Module {
         }
 
         try {
-            // Save the current slowdown value
+            // 先把当前的减速值记下来，等会儿要还原
             this.savedSlowdown = keepSprint.slowdown.getValue().doubleValue();
             
-            // Enable KeepSprint and set slowdown to 0
+            // 开启 KeepSprint 并把减速归零，这样被拦下也不会掉速
             if (!keepSprint.isEnabled()) {
                 keepSprint.toggle();
             }
@@ -212,10 +212,10 @@ public class HitSelect extends Module {
         }
 
         try {
-            // Restore the original slowdown value
+            // 把减速值放回原来的
             keepSprint.slowdown.setValue((int) this.savedSlowdown);
             
-            // Disable KeepSprint if we enabled it
+            // 要是我们刚才顺手打开的 KeepSprint，现在关掉
             if (keepSprint.isEnabled()) {
                 keepSprint.toggle();
             }
@@ -232,38 +232,37 @@ public class HitSelect extends Module {
         Vec3 lastPos = new Vec3(source.lastTickPosX, source.lastTickPosY, source.lastTickPosZ);
         Vec3 targetPos = target.getPositionVector();
 
-        // Calculate movement vector
+        // 用这一帧和上一帧的位置差，算出实际走的方向
         double mx = currentPos.xCoord - lastPos.xCoord;
         double mz = currentPos.zCoord - lastPos.zCoord;
         double movementLength = Math.sqrt(mx * mx + mz * mz);
 
-        // If not moving, return false
+        // 一动没动，谈不上朝哪走
         if (movementLength == 0.0) {
             return false;
         }
 
-        // Normalize movement vector
+        // 归一化，后面只看方向不看快慢
         mx /= movementLength;
         mz /= movementLength;
 
-        // Calculate vector to target
+        // 从自己指向对方的那个向量
         double tx = targetPos.xCoord - currentPos.xCoord;
         double tz = targetPos.zCoord - currentPos.zCoord;
         double targetLength = Math.sqrt(tx * tx + tz * tz);
 
-        // If target is at same position, return false
+        // 就站在同一个点上，没有夹角可算
         if (targetLength == 0.0) {
             return false;
         }
 
-        // Normalize target vector
         tx /= targetLength;
         tz /= targetLength;
 
-        // Calculate dot product (cosine of angle between vectors)
+        // 点乘就是两个方向夹角的余弦
         double dotProduct = mx * tx + mz * tz;
 
-        // Check if angle is within threshold
+        // 夹角没超过阈值，就算朝着对方走
         return dotProduct >= Math.cos(Math.toRadians(maxAngle));
     }
 

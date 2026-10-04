@@ -1,39 +1,38 @@
 /**
- * This is an API used for handling events across your java based projects.
- * It's meant to be simple to use without sacrificing performance and extensibility.
+ * 一个管事件的小 API，项目里到处都能用。
+ * 想要的是好上手，同时别为了好用就把性能和扩展性搭进去。
  * <p>
- * Currently the API is in beta phase but it's stable and ready to be used.
+ * 版本号还算 beta，但该稳的都稳了，放心用。
  * <p>
- * If you have any suggestion for improvements/fixes for shit,
- * feel free to make a pull request on the bitbucket: https://bitbucket.org/DarkMagician6/eventapi/overview.
+ * 想改点什么、修个 bug，欢迎直接提 PR：
+ * https://bitbucket.org/DarkMagician6/eventapi/overview
  * <p>
- * For information on how to use the API take a look at the wiki:
+ * 怎么用看这里的 wiki：
  * https://bitbucket.org/DarkMagician6/eventapi/wiki/Home
  *
- * @Todo Improve/update the wiki.
+ * @Todo wiki 还是老样子，哪天得重新写一遍。
  */
 package myau.event;
 
 /**
- * Main class for the API.
- * Contains various information about the API.
+ * 这套 API 的门面，主要就是放几个版本、作者之类的元信息。
  *
  * @author DarkMagician6
  * @since July 31, 2013
  */
 public final class EventAPI {
     /**
-     * No need to create an Object of this class as all Methods are static.
+     * 方法全是静态的，构造器没用，直接封死。
      */
     private EventAPI() {
     }
 
     /**
-     * The current version of the API.
+     * 当前版本号。
      */
     public static final String VERSION = String.format("%s-%s", "0.7", "beta");
     /**
-     * Array containing the authors of the API.
+     * 作者名单。
      */
     public static final String[] AUTHORS = {
             "DarkMagician6"

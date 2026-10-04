@@ -4,7 +4,9 @@ import myau.Myau;
 import myau.event.EventManager;
 import myau.events.Render2DEvent;
 import myau.module.modules.NickHider;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.scoreboard.Scoreboard;
 import net.minecraftforge.client.GuiIngameForge;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -28,6 +30,34 @@ public abstract class MixinGuiIngameForge {
     )
     private void renderGameOverlay(float float1, CallbackInfo callbackInfo) {
         EventManager.call(new Render2DEvent(float1));
+    }
+
+    @Inject(
+            method = {"renderPlayerList"},
+            at = {@At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/GuiPlayerTabOverlay;updatePlayerList(Z)V",
+                    ordinal = 1,
+                    shift = At.Shift.AFTER
+            )},
+            require = 0
+    )
+    private void betterTabExit(int width, int height, CallbackInfo callbackInfo) {
+        if (myau.util.TabAnim.overlay == null) {
+            return;
+        }
+        if (myau.util.TabAnim.settled() || myau.util.TabAnim.isShowing()) {
+            return;
+        }
+        if (myau.util.TabAnim.getScaleY() <= 0.005F) {
+            return;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null) {
+            return;
+        }
+        Scoreboard scoreboard = mc.theWorld.getScoreboard();
+        myau.util.TabAnim.overlay.renderPlayerlist(width, scoreboard, scoreboard.getObjectiveInDisplaySlot(0));
     }
 
     @Redirect(

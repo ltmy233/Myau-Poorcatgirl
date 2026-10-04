@@ -61,7 +61,7 @@ public class NotificationManager {
     }
 
     public synchronized List<NotificationEntry> getActive() {
-        // cleanup expired entries and return a copy of active entries (newest last)
+        // 先把过期的清掉，再把还在的复制一份返回（旧的在前，新的在后）
         this.cleanupExpired();
         return new ArrayList<>(this.entries);
     }

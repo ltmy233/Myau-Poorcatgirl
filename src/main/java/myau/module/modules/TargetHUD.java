@@ -17,6 +17,8 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.network.NetworkPlayerInfo;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -44,6 +46,12 @@ public class TargetHUD extends Module {
     private float oldHealth = 0.0F;
     private float newHealth = 0.0F;
     private float maxHealth = 0.0F;
+    public final ModeProperty style = new ModeProperty("style", 1, new String[]{"MYAU", "RAVEN_LEGACY"});
+    private EntityLivingBase ravenTarget;
+    private long ravenLastAlive;
+    private long ravenHealthChanged;
+    private float ravenHealthFrom;
+    private float ravenHealthTo;
     public final ModeProperty color = new ModeProperty("color", 0, new String[]{"DEFAULT", "HUD"});
     public final ModeProperty posX = new ModeProperty("position-x", 1, new String[]{"LEFT", "MIDDLE", "RIGHT"});
     public final ModeProperty posY = new ModeProperty("position-y", 1, new String[]{"TOP", "MIDDLE", "BOTTOM"});
@@ -60,8 +68,12 @@ public class TargetHUD extends Module {
     public final BooleanProperty chatPreview = new BooleanProperty("chat-preview", false);
 
     private EntityLivingBase resolveTarget() {
+        KillAuraV2 killAuraV2 = (KillAuraV2) Myau.moduleManager.modules.get(KillAuraV2.class);
+        if (killAuraV2 != null && killAuraV2.isEnabled() && TeamUtil.isEntityLoaded(killAuraV2.getTarget())) {
+            return killAuraV2.getTarget();
+        }
         KillAura killAura = (KillAura) Myau.moduleManager.modules.get(KillAura.class);
-        if (killAura.isEnabled() && killAura.isAttackAllowed() && TeamUtil.isEntityLoaded(killAura.getTarget())) {
+        if (killAura.isEnabled() && TeamUtil.isEntityLoaded(killAura.getTarget())) {
             return killAura.getTarget();
         } else if (!(Boolean) this.kaOnly.getValue()
                 && !this.lastAttackTimer.hasTimeElapsed(1500L)
@@ -74,10 +86,21 @@ public class TargetHUD extends Module {
 
     private ResourceLocation getSkin(EntityLivingBase entityLivingBase) {
         if (entityLivingBase instanceof EntityPlayer) {
-            NetworkPlayerInfo playerInfo = mc.getNetHandler().getPlayerInfo(entityLivingBase.getName());
+            if (entityLivingBase instanceof AbstractClientPlayer) {
+                AbstractClientPlayer clientPlayer = (AbstractClientPlayer) entityLivingBase;
+                if (clientPlayer.hasSkin()) return clientPlayer.getLocationSkin();
+            }
+            if (mc.getNetHandler() == null) {
+                return DefaultPlayerSkin.getDefaultSkin(entityLivingBase.getUniqueID());
+            }
+            NetworkPlayerInfo playerInfo = mc.getNetHandler().getPlayerInfo(entityLivingBase.getUniqueID());
+            if (playerInfo == null) {
+                playerInfo = mc.getNetHandler().getPlayerInfo(entityLivingBase.getName());
+            }
             if (playerInfo != null) {
                 return playerInfo.getLocationSkin();
             }
+            return DefaultPlayerSkin.getDefaultSkin(entityLivingBase.getUniqueID());
         }
         return null;
     }
@@ -111,6 +134,10 @@ public class TargetHUD extends Module {
 
     @EventTarget
     public void onRender(Render2DEvent event) {
+        if (this.isEnabled() && this.style.getValue() == 1) {
+            this.renderRavenTarget();
+            return;
+        }
         if (this.isEnabled() && mc.thePlayer != null) {
             EntityLivingBase entityLivingBase = this.target;
             this.target = this.resolveTarget();
@@ -210,6 +237,66 @@ public class TargetHUD extends Module {
                 GlStateManager.popMatrix();
             }
         }
+    }
+
+    private void renderRavenTarget() {
+        if (mc.thePlayer == null || mc.theWorld == null || mc.currentScreen != null) {
+            ravenTarget = null;
+            return;
+        }
+        long now = System.currentTimeMillis();
+        EntityLivingBase current = resolveTarget();
+        if (current != null) {
+            float health = current.isDead ? 0.0F : Math.max(0.0F, Math.min(1.0F, current.getHealth() / Math.max(1.0F, current.getMaxHealth())));
+            if (current != ravenTarget) {
+                ravenTarget = current;
+                ravenHealthFrom = ravenHealthTo = health;
+                headTexture = null;
+            } else if (health != ravenHealthTo) {
+                float t = Math.min(1.0F, (now - ravenHealthChanged) / 350.0F);
+                ravenHealthFrom += (ravenHealthTo - ravenHealthFrom) * t;
+                ravenHealthTo = health;
+                ravenHealthChanged = now;
+            }
+            ResourceLocation skin = getSkin(current);
+            if (skin != null) headTexture = skin;
+            ravenLastAlive = now;
+        }
+        if (ravenTarget == null) return;
+        float opacity = 1.0F - Math.max(0.0F, Math.min(1.0F, (now - ravenLastAlive - 400L) / 400.0F));
+        if (opacity <= 0.0F) {
+            ravenTarget = null;
+            return;
+        }
+        String text = ravenTarget.getDisplayName().getFormattedText() + " " + healthFormat.format(ravenTarget.getHealth());
+        if (indicator.getValue()) {
+            text += ravenHealthTo <= (mc.thePlayer.getHealth() + mc.thePlayer.getAbsorptionAmount()) / Math.max(1.0F, mc.thePlayer.getMaxHealth()) ? " \u00a7aW" : " \u00a7cL";
+        }
+        ScaledResolution resolution = new ScaledResolution(mc);
+        float avatar = headTexture == null ? 0.0F : 28.0F;
+        float width = mc.fontRendererObj.getStringWidth(text) + 24.0F + avatar;
+        float x = (resolution.getScaledWidth() - width) * 0.5F + offX.getValue();
+        float y = resolution.getScaledHeight() * 0.5F + 15.0F + offY.getValue();
+        int alpha = Math.max(1, Math.round(opacity * 255.0F));
+        int accent = getTargetColor(ravenTarget).getRGB() & 0xFFFFFF;
+        RenderUtil.drawRoundedRect(x, y, width, 35.0F, 8.0F, (Math.min(alpha, 110) << 24));
+        float contentX = x + 8.0F + avatar;
+        RenderUtil.drawRoundedRect(contentX - 2.0F, y + 25.0F, width - avatar - 12.0F, 5.0F, 2.0F, (Math.min(alpha, 110) << 24));
+        float t = Math.min(1.0F, Math.max(0.0F, (now - ravenHealthChanged) / 350.0F));
+        float health = animations.getValue() ? ravenHealthFrom + (ravenHealthTo - ravenHealthFrom) * t : ravenHealthTo;
+        RenderUtil.drawRoundedRect(contentX - 2.0F, y + 25.0F, (width - avatar - 12.0F) * health, 5.0F, 2.0F, (Math.min(alpha, 210) << 24) | accent);
+        if (headTexture != null) {
+            GlStateManager.pushMatrix();
+            GlStateManager.enableBlend();
+            GlStateManager.color(1.0F, 1.0F, 1.0F, alpha / 255.0F);
+            mc.getTextureManager().bindTexture(headTexture);
+            Gui.drawScaledCustomSizeModalRect((int) x + 4, (int) y + 5, 8.0F, 8.0F, 8, 8, 23, 23, 64.0F, 64.0F);
+            Gui.drawScaledCustomSizeModalRect((int) x + 4, (int) y + 5, 40.0F, 8.0F, 8, 8, 23, 23, 64.0F, 64.0F);
+            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+            GlStateManager.disableBlend();
+            GlStateManager.popMatrix();
+        }
+        mc.fontRendererObj.drawString(text, contentX, y + 8.0F, (alpha << 24) | 0xDCDCDC, shadow.getValue());
     }
 
     @EventTarget

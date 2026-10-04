@@ -30,6 +30,67 @@ public class FMLLoadingPlugin implements IMixinConfigPlugin {
     public void onLoad(String mixinPackage) {
         this.mixinPackage = mixinPackage;
         mixinPlugins.add(this);
+        ensureSidebarModVisible();
+    }
+
+    private static boolean sidebarPreloadAttempted = false;
+
+    private static void ensureSidebarModVisible() {
+        if (sidebarPreloadAttempted) {
+            return;
+        }
+        sidebarPreloadAttempted = true;
+        try {
+            net.minecraft.launchwrapper.LaunchClassLoader loader = net.minecraft.launchwrapper.Launch.classLoader;
+            if (loader == null) {
+                return;
+            }
+            if (loader.getResource("revamp/sidebarmod/gui/GuiSidebar.class") != null) {
+                return;
+            }
+            URL classUrl = FMLLoadingPlugin.class.getProtectionDomain().getCodeSource().getLocation();
+            if (classUrl == null) {
+                return;
+            }
+            String string = classUrl.toString();
+            URL base;
+            if (classUrl.getProtocol().equals("jar")) {
+                base = new URL(string.substring(4).split("!")[0]);
+            } else if (string.endsWith(".class")) {
+                base = new URL(string.replace("\\", "/").replace(
+                        FMLLoadingPlugin.class.getCanonicalName().replace(".", "/") + ".class", ""));
+            } else {
+                base = classUrl;
+            }
+            Path file = Paths.get(base.toURI());
+            Path dir = Files.isDirectory(file) ? file : file.getParent();
+            if (dir == null || !Files.isDirectory(dir)) {
+                return;
+            }
+            Path sidebarJar;
+            try (Stream<Path> entries = Files.list(dir)) {
+                sidebarJar = entries.filter(p -> {
+                    String name = p.getFileName().toString().toLowerCase();
+                    return name.endsWith(".jar") && name.contains("sidebar");
+                }).findFirst().orElse(null);
+            }
+            if (sidebarJar != null) {
+                loader.addURL(sidebarJar.toUri().toURL());
+                System.out.println("Myau: preloaded sidebar jar onto classpath: " + sidebarJar);
+            }
+        } catch (Throwable t) {
+            System.out.println("Myau: sidebar jar preload skipped: " + t);
+        }
+    }
+
+    private static void purgeNegativeResourceCache(String className) {
+        try {
+            java.lang.reflect.Field field = net.minecraft.launchwrapper.Launch.classLoader.getClass()
+                    .getDeclaredField("negativeResourceCache");
+            field.setAccessible(true);
+            ((Set<?>) field.get(net.minecraft.launchwrapper.Launch.classLoader)).remove(className);
+        } catch (Throwable ignored) {
+        }
     }
 
     public URL getBaseUrlForClassUrl(URL classUrl) {
@@ -123,6 +184,15 @@ public class FMLLoadingPlugin implements IMixinConfigPlugin {
     }
 
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (targetClassName.startsWith("gg.essential.")) {
+            String res = targetClassName.replace('.', '/') + ".class";
+            return net.minecraft.launchwrapper.Launch.classLoader.getResource(res) != null;
+        }
+        if (targetClassName.startsWith("revamp.sidebarmod.")) {
+            purgeNegativeResourceCache(targetClassName);
+            String res = targetClassName.replace('.', '/') + ".class";
+            return net.minecraft.launchwrapper.Launch.classLoader.getResource(res) != null;
+        }
         return true;
     }
 

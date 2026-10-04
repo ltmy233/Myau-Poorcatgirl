@@ -42,7 +42,7 @@ public class SessionManager {
         try {
             getField().set(mc, session);
         } catch (Exception e) {
-            //
+            // 私有字段换不了就算了，登录态保持原样
         }
     }
 }

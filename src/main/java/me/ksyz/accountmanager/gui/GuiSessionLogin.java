@@ -66,27 +66,27 @@ public class GuiSessionLogin extends GuiScreen {
 
     @Override
     protected void actionPerformed(GuiButton button) throws IOException {
-        //login button
+        // 登录按钮
         if (button.id == 998) {
             try {
                 String username, uuid, token, session = sessionField.getText();
 
-                if (session.contains(":")) { //if fully formatted string (ign:uuid:token)
-                    //split string to data
+                if (session.contains(":")) { // 整条贴进来了（ign:uuid:token）
+                    // 拆开分别用
                     username = session.split(":")[0];
                     uuid = session.split(":")[1];
                     token = session.split(":")[2];
-                } else { //if only token
-                    //make request
+                } else { // 只有一个 token
+                    // 拿它查一下 profile
                     HttpURLConnection c = (HttpURLConnection) new URL("https://api.minecraftservices.com/minecraft/profile/").openConnection();
                     c.setRequestProperty("Content-type", "application/json");
                     c.setRequestProperty("Authorization", "Bearer " + sessionField.getText());
                     c.setDoOutput(true);
 
-                    //get json
+                    // 响应按 JSON 读出来
                     JsonObject json = new JsonParser().parse(IOUtils.toString(c.getInputStream())).getAsJsonObject();
 
-                    //get data
+                    // 名字和 uuid 就在这儿
                     username = json.get("name").getAsString();
                     uuid = json.get("id").getAsString();
                     token = session;

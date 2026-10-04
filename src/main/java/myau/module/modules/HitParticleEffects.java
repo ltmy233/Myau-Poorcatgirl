@@ -36,8 +36,8 @@ public class HitParticleEffects extends Module {
         EntityLivingBase target = (EntityLivingBase) event.getTarget();
 
         if (this.onlyCrits.getValue()) {
-            // A more robust critical check might involve looking at the Criticals module state or damage type.
-            // For simplicity, this is a basic vanilla-like critical hit indicator.
+            // 认真点做暴击判定的话，该去看 Criticals 模块状态或者伤害类型。
+            // 这里图省事，就照原版那套条件粗判一下。
             boolean isCritical = mc.thePlayer.fallDistance > 0.0F && !mc.thePlayer.onGround && !mc.thePlayer.isInWater() && !mc.thePlayer.isRiding();
             if (!isCritical) return;
         }
@@ -63,7 +63,7 @@ public class HitParticleEffects extends Module {
                     double redstoneMotionX = (double)redstoneColor.getRed()/255.0;
                     double redstoneMotionY = (double)redstoneColor.getGreen()/255.0;
                     double redstoneMotionZ = (double)redstoneColor.getBlue()/255.0;
-                    // For REDSTONE particles, motionX/Y/Z are interpreted as RGB color if very small
+                    // 红石粒子的 motionX/Y/Z 在数值很小时当 RGB 颜色用
                     if (redstoneMotionX == 0.0 && redstoneMotionY == 0.0 && redstoneMotionZ == 0.0) { // Avoid black particles
                         redstoneMotionX = 1.0; // Default to red if color is black
                     }

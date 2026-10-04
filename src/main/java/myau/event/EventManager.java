@@ -13,25 +13,27 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
+ * 调度中心：事件发出去以后，由它去把该收的人挨个叫一遍。
+ *
  * @author DarkMagician6
  * @since February 2, 2014
  */
 public final class EventManager {
     /**
-     * HashMap containing all the registered MethodData sorted on the event parameters of the methods.
+     * 所有登记过的监听方法都在这里，按事件类型分好组，取的时候直接对号入座。
      */
     private static final HashMap<Class<? extends Event>, List<MethodData>> REGISTRY_MAP = new HashMap<>();
 
     /**
-     * All methods in this class are static so there would be no reason to create an object of the EventManager class.
+     * 全是静态方法，没必要再 new 一个出来，构造器直接掐掉。
      */
     private EventManager() {
     }
 
     /**
-     * Registers all the methods marked with the EventTarget annotation in the class of the given Object.
+     * 把对象里所有带 {@link EventTarget} 的方法都登记进来。
      *
-     * @param object Object that you want to register.
+     * @param object 要登记的对象，一般就是模块自己。
      */
     public static void register(Object object) {
         for (final Method method : object.getClass().getDeclaredMethods()) {
@@ -42,11 +44,10 @@ public final class EventManager {
     }
 
     /**
-     * Registers the methods marked with the EventTarget annotation and that require
-     * the specified Event as the parameter in the class of the given Object.
+     * 同上，但只挑参数是指定事件类型的那些方法登记。
      *
-     * @param object     Object that contains the Method you want to register.
-     * @param eventClass class for the marked method we are looking for.
+     * @param object     持有这些方法的对象。
+     * @param eventClass 只关心这一个事件类型。
      */
     public static void register(Object object, Class<? extends Event> eventClass) {
         for (final Method method : object.getClass().getDeclaredMethods()) {
@@ -57,9 +58,9 @@ public final class EventManager {
     }
 
     /**
-     * Unregisters all the methods inside the Object that are marked with the EventTarget annotation.
+     * 把这个对象登记过的监听方法全部摘掉，模块关掉或者对象销毁时走这里。
      *
-     * @param object Object of which you want to unregister all Methods.
+     * @param object 要退订的对象。
      */
     public static void unregister(Object object) {
         for (final List<MethodData> dataList : REGISTRY_MAP.values()) {
@@ -73,10 +74,10 @@ public final class EventManager {
     }
 
     /**
-     * Unregisters all the methods in the given Object that have the specified class as a parameter.
+     * 只退订这个对象里监听某一种事件的方法，其它的留着不动。
      *
-     * @param object     Object that implements the Listener interface.
-     * @param eventClass class for the method to remove.
+     * @param object     要退订的对象。
+     * @param eventClass 只取消对这个事件的监听。
      */
     public static void unregister(Object object, Class<? extends Event> eventClass) {
         if (REGISTRY_MAP.containsKey(eventClass)) {
@@ -90,20 +91,19 @@ public final class EventManager {
     }
 
     /**
-     * Registers a new MethodData to the HashMap.
-     * If the HashMap already contains the key of the Method's first argument it will add
-     * a new MethodData to key's matching list and sorts it based on Priority. @see com.darkmagician6.eventapi.types.Priority
-     * Otherwise it will put a new entry in the HashMap with a the first argument's class
-     * and a new CopyOnWriteArrayList containing the new MethodData.
+     * 单个方法的登记入口。
+     * 这个事件类型已经有人占了，就插进它那条列表再按优先级排一次；
+     * 还没人管，就新开一条列表把这个方法放进去。
+     * 排序的规则看 {@link Priority}。
      *
-     * @param method Method to register to the HashMap.
-     * @param object Source object of the method.
+     * @param method 要登记的方法。
+     * @param object 方法挂在谁身上，回头调用时要拿它当实例。
      */
     private static void register(Method method, Object object) {
         Class<? extends Event> indexClass = (Class<? extends Event>) method.getParameterTypes()[0];
-        //New MethodData from the Method we are registering.
+        // 先把方法连同它的优先级打包好
         final MethodData data = new MethodData(object, method, method.getAnnotation(EventTarget.class).value());
-        //Set's the method to accessible so that we can also invoke it if it's protected or private.
+        // 私有/受保护的方法也得能调，不然白登记了
         if (!data.getTarget().isAccessible()) {
             data.getTarget().setAccessible(true);
         }
@@ -114,7 +114,7 @@ public final class EventManager {
             }
         } else {
             REGISTRY_MAP.put(indexClass, new CopyOnWriteArrayList<MethodData>() {
-                //Eclipse was bitching about a serialVersionUID.
+                // 匿名子类不写这个的话编译器会一直提示
                 private static final long serialVersionUID = 666L;
 
                 {
@@ -125,9 +125,9 @@ public final class EventManager {
     }
 
     /**
-     * Removes an entry based on the key value in the map.
+     * 把某个事件类型整条记录从表里删掉。
      *
-     * @param indexClass They index key in the map of which the entry should be removed.
+     * @param indexClass 要删的那个事件类型。
      */
     public static void removeEntry(Class<? extends Event> indexClass) {
         Iterator<Map.Entry<Class<? extends Event>, List<MethodData>>> mapIterator = REGISTRY_MAP.entrySet().iterator();
@@ -140,10 +140,9 @@ public final class EventManager {
     }
 
     /**
-     * Cleans up the map entries.
-     * Uses an iterator to make sure that the entry is completely removed.
+     * 清理表里的空壳记录。走迭代器删，直接对着 map 删会出问题。
      *
-     * @param onlyEmptyEntries If true only remove the entries with an empty list, otherwise remove all the entries.
+     * @param onlyEmptyEntries 只清空列表的那些条目；给 false 就整张表一起清。
      */
     public static void cleanMap(boolean onlyEmptyEntries) {
         Iterator<Map.Entry<Class<? extends Event>, List<MethodData>>> mapIterator = REGISTRY_MAP.entrySet().iterator();
@@ -155,9 +154,9 @@ public final class EventManager {
     }
 
     /**
-     * Sorts the List that matches the corresponding Event class based on priority value.
+     * 按优先级把某个事件的监听列表重新排一遍，优先级高的排前面。
      *
-     * @param indexClass The Event class index in the HashMap of the List to sort.
+     * @param indexClass 要重排的那条列表对应的事件类型。
      */
     private static void sortListValue(Class<? extends Event> indexClass) {
         List<MethodData> sortedList = new CopyOnWriteArrayList<>();
@@ -168,16 +167,15 @@ public final class EventManager {
                 }
             }
         }
-        //Overwriting the existing entry.
+        // 排完直接覆盖原来的那条
         REGISTRY_MAP.put(indexClass, sortedList);
     }
 
     /**
-     * Checks if the method does not meet the requirements to be used to receive event calls from the Dispatcher.
-     * Performed checks: Checks if the parameter length is not 1 and if the EventTarget annotation is not present.
+     * 这个方法能不能用来收事件？参数不是一个、或者压根没打 {@link EventTarget}，就不收。
      *
-     * @param method Method to check.
-     * @return True if the method should not be used for receiving event calls from the Dispatcher.
+     * @param method 待检查的方法。
+     * @return true 表示这方法不合格，别拿它收事件。
      * @see EventTarget
      */
     private static boolean isMethodBad(Method method) {
@@ -185,12 +183,11 @@ public final class EventManager {
     }
 
     /**
-     * Checks if the method does not meet the requirements to be used to receive event calls from the Dispatcher.
-     * Performed checks: Checks if the parameter class of the method is the same as the event we want to receive.
+     * 在上一条的基础上再挑一次：参数类型还得跟我们要发的事件对得上。
      *
-     * @param method     Method to check.
-     * @param eventClass of the Event we want to find a method for receiving it.
-     * @return True if the method should not be used for receiving event calls from the Dispatcher.
+     * @param method     待检查的方法。
+     * @param eventClass 正准备发出去的那个事件类型。
+     * @return true 表示这方法不收这个事件。
      * @see EventTarget
      */
     private static boolean isMethodBad(Method method, Class<? extends Event> eventClass) {
@@ -198,17 +195,13 @@ public final class EventManager {
     }
 
     /**
-     * Call's an event and invokes the right methods that are listening to the event call.
-     * First get's the matching list from the registry map based on the class of the event.
-     * Then it checks if the list is not null. After that it will check if the event is an instance of
-     * EventStoppable and if so it will add an extra check when looping trough the data.
-     * If the Event was an instance of EventStoppable it will check every loop if the EventStoppable is stopped, and if
-     * it is it will break the loop, thus stopping the call.
-     * For every MethodData in the list it will invoke the Data's method with the Event as the argument.
-     * After that is all done it will return the Event.
+     * 发事件的地方，谁登记了就叫谁。
+     * 先按事件类型把名单取出来，没有就算了。
+     * 要是这事件是能叫停的 {@link EventStoppable}，那每叫完一个就回头看一眼停没停，停了立刻收工；
+     * 普通事件就一口气全叫完。最后把事件原样还回去。
      *
-     * @param event Event to dispatch.
-     * @return Event in the state after dispatching it.
+     * @param event 要发出去的事件。
+     * @return 走完一圈之后的事件，可能是被别人改过的状态。
      */
     public static Event call(final Event event) {
         List<MethodData> dataList = REGISTRY_MAP.get(event.getClass());
@@ -231,10 +224,10 @@ public final class EventManager {
     }
 
     /**
-     * Invokes a MethodData when an Event call is made.
+     * 真正动手去调那个监听方法，异常打个堆栈就完了，别把游戏一起带崩。
      *
-     * @param data     The data of which the targeted Method should be invoked.
-     * @param argument The called Event which should be used as an argument for the targeted Method.
+     * @param data     要调的方法和它挂的对象。
+     * @param argument 当作参数传进去的事件。
      */
     private static void invoke(MethodData data, Event argument) {
         try {
@@ -245,6 +238,8 @@ public final class EventManager {
     }
 
     /**
+     * 一条登记记录，绑着"谁的""哪个方法""什么优先级"。
+     *
      * @author DarkMagician6
      * @since January 2, 2014
      */
@@ -254,13 +249,11 @@ public final class EventManager {
         private final byte priority;
 
         /**
-         * Sets the values of the data.
+         * 三个字段一次填满，之后只读。
          *
-         * @param source   The source Object of the data. Used by the VM to
-         *                 determine to which object it should send the call to.
-         * @param target   The targeted Method to which the Event should be send to.
-         * @param priority The priority of this Method. Used by the registry to sort
-         *                 the data on.
+         * @param source   方法挂的对象，调用时当实例用。
+         * @param target   真正要调的那个方法。
+         * @param priority 这个方法的优先级，列表排序靠它。
          */
         public MethodData(Object source, Method target, byte priority) {
             this.source = source;
@@ -269,27 +262,21 @@ public final class EventManager {
         }
 
         /**
-         * Gets the source Object of the data.
-         *
-         * @return Source Object of the targeted Method.
+         * @return 方法挂的对象。
          */
         public Object getSource() {
             return source;
         }
 
         /**
-         * Gets the targeted Method.
-         *
-         * @return The Method that is listening to certain Event calls.
+         * @return 登记进来的那个方法。
          */
         public Method getTarget() {
             return target;
         }
 
         /**
-         * Gets the priority value of the targeted Method.
-         *
-         * @return The priority value of the targeted Method.
+         * @return 这个方法的优先级。
          */
         public byte getPriority() {
             return priority;

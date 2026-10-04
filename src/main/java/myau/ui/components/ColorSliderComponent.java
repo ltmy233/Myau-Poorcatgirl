@@ -3,6 +3,7 @@ package myau.ui.components;
 import myau.enums.ChatColors;
 import myau.property.properties.ColorProperty;
 import myau.ui.Component;
+import myau.ui.Lang;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import org.lwjgl.opengl.GL11;
@@ -38,7 +39,7 @@ public class ColorSliderComponent implements Component {
         int width = parentModule.category.getWidth() - 8;
         GL11.glPushMatrix();
         GL11.glScaled(0.5, 0.5, 0.5);
-        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(property.getName().replace("-", " ") + ": " + ChatColors.formatColor(property.formatValue()), (float) (x * 2), (float) ((int) ((float) (this.parentModule.category.getY() + this.offsetY + 3) * 2.0F)), -1);
+        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(Lang.t(property.getName()).replace("-", " ") + ": " + ChatColors.formatColor(property.formatValue()), (float) (x * 2), (float) ((int) ((float) (this.parentModule.category.getY() + this.offsetY + 3) * 2.0F)), -1);
         GL11.glPopMatrix();
         if (!draggingHue && !draggingSat && !draggingBri) {
             Color color = new Color(property.getValue());

@@ -1,10 +1,9 @@
 package myau.event.types;
 
 /**
- * The priority for the dispatcher to determine what method should be invoked first.
- * Ram was talking about the memory usage of the way I store the data so I decided
- * to just use bytes for the priority because they take up only 8 bits of memory
- * per value compared to the 32 bits per value of an enum (Same as an integer).
+ * 调度的时候靠它决定先叫谁后叫谁。
+ * 当时 Ram 提了一嘴我这么存数据有点费内存，所以优先级干脆用 byte：
+ * 一个值只要 8 位，换成 enum 得 32 位，跟 int 一样贵。
  *
  * @author DarkMagician6
  * @since August 3, 2013
@@ -12,32 +11,32 @@ package myau.event.types;
 public final class Priority {
     public static final byte
             /**
-             * Highest priority, called first.
+             * 最高，排第一个叫。
              */
             HIGHEST = 0,
     /**
-     * High priority, called after the highest priority.
+     * 次高，紧跟着 HIGHEST。
      */
     HIGH = 1,
     /**
-     * Medium priority, called after the high priority.
+     * 居中，排在 HIGH 后面。
      */
     MEDIUM = 2,
     /**
-     * Low priority, called after the medium priority.
+     * 靠后，排在 MEDIUM 后面。
      */
     LOW = 3,
     /**
-     * Lowest priority, called after all the other priorities.
+     * 最低，所有都叫完了才轮到它。
      */
     LOWEST = 4;
     /**
-     * Array containing all the prioriy values.
+     * 把所有优先级按顺序收在一起，排序时照着它走。
      */
     public static final byte[] VALUE_ARRAY;
 
     /**
-     * Sets up the VALUE_ARRAY the first time anything in this class is called.
+     * 类第一次被用到时才填 {@link #VALUE_ARRAY}。
      */
     static {
         VALUE_ARRAY = new byte[]{

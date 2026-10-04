@@ -3,6 +3,7 @@ package myau.ui.components;
 import myau.enums.ChatColors;
 import myau.property.properties.ModeProperty;
 import myau.ui.Component;
+import myau.ui.Lang;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL11;
 
@@ -28,8 +29,9 @@ public class ModeComponent implements Component {
         GL11.glScaled(0.5D, 0.5D, 0.5D);
         String mode = this.property.getModeString();
         mode = mode.replace("_", " ");
-        int bruhWidth = (int) (Minecraft.getMinecraft().fontRendererObj.getStringWidth(this.property.getName() + ": ") * 0.5);
-        Minecraft.getMinecraft().fontRendererObj.drawString(this.property.getName() + ": ", (float) ((this.parentModule.category.getX() + 4) * 2), (float) ((this.parentModule.category.getY() + this.offsetY + 4) * 2), 0xffffffff, true);
+        String label = Lang.t(this.property.getName()) + ": ";
+        int bruhWidth = (int) (Minecraft.getMinecraft().fontRendererObj.getStringWidth(label) * 0.5);
+        Minecraft.getMinecraft().fontRendererObj.drawString(label, (float) ((this.parentModule.category.getX() + 4) * 2), (float) ((this.parentModule.category.getY() + this.offsetY + 4) * 2), 0xffffffff, true);
         Minecraft.getMinecraft().fontRendererObj.drawString(ChatColors.formatColor("&9" + mode.substring(0, 1).toUpperCase() + mode.substring(1).toLowerCase()), (float) ((this.parentModule.category.getX() + 4 + bruhWidth) * 2), (float) ((this.parentModule.category.getY() + this.offsetY + 4) * 2), -1, true);
         GL11.glPopMatrix();
     }

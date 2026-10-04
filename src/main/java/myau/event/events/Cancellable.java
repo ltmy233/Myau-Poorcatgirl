@@ -1,23 +1,21 @@
 package myau.event.events;
 
 /**
- * Simple interface which should be implemented in events that can be cancelled.
+ * 能被叫停的事件都实现这个接口。
  *
  * @author DarkMagician6
  * @since August 27, 2013
  */
 public interface Cancellable {
     /**
-     * Gets the current cancelled state of the event.
-     *
-     * @return True if the event is cancelled.
+     * @return 这个事件现在是不是已经被取消了。
      */
     boolean isCancelled();
 
     /**
-     * Sets the cancelled state of the event.
+     * 把事件标记成取消，后面的监听者就能看到。
      *
-     * @param state Whether the event should be cancelled or not.
+     * @param state true 取消，false 放行。
      */
     void setCancelled(boolean state);
 }

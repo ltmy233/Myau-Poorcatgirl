@@ -7,6 +7,7 @@ import myau.module.modules.HUD;
 import myau.property.Property;
 import myau.property.properties.*;
 import myau.ui.Component;
+import myau.ui.Lang;
 import myau.ui.dataset.impl.FloatSlider;
 import myau.ui.dataset.impl.IntSlider;
 import myau.ui.dataset.impl.PercentageSlider;
@@ -46,9 +47,15 @@ public class ModuleComponent implements Component {
                     y += c.getHeight();
                 } else if (baseProperty instanceof IntProperty) {
                     IntProperty property = (IntProperty) baseProperty;
-                    SliderComponent c = new SliderComponent(new IntSlider(property), this, y);
-                    this.settings.add(c);
-                    y += c.getHeight();
+                    if (mod instanceof myau.module.modules.Freelook && "freelook-key".equals(property.getName())) {
+                        KeyPropertyComponent c = new KeyPropertyComponent(property, this, y);
+                        this.settings.add(c);
+                        y += c.getHeight();
+                    } else {
+                        SliderComponent c = new SliderComponent(new IntSlider(property), this, y);
+                        this.settings.add(c);
+                        y += c.getHeight();
+                    }
                 } else if (baseProperty instanceof PercentProperty) {
                     PercentProperty property = (PercentProperty) baseProperty;
                     SliderComponent c = new SliderComponent(new PercentageSlider(property), this, y);
@@ -95,7 +102,8 @@ public class ModuleComponent implements Component {
         } else {
             textColor = new Color(102, 102, 102).getRGB();
         }
-        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(this.mod.getName(), (float) (this.category.getX() + this.category.getWidth() / 2 - Minecraft.getMinecraft().fontRendererObj.getStringWidth(this.mod.getName()) / 2), (float) (this.category.getY() + this.offsetY + 4), textColor);
+        String moduleName = Lang.t(this.mod.getName());
+        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(moduleName, (float) (this.category.getX() + this.category.getWidth() / 2 - Minecraft.getMinecraft().fontRendererObj.getStringWidth(moduleName) / 2), (float) (this.category.getY() + this.offsetY + 4), textColor);
         if (this.panelExpand && !this.settings.isEmpty()) {
             for (Component c : this.settings) {
                 if (c.isVisible()) {
@@ -143,7 +151,7 @@ public class ModuleComponent implements Component {
             this.panelExpand = !this.panelExpand;
         }
 
-        if(!panelExpand) return;
+        if(!panelExpand || !this.category.isInViewport(y)) return;
         for (Component c : this.settings) {
             if (c.isVisible()) {
                 c.mouseDown(x, y, button);
@@ -173,7 +181,9 @@ public class ModuleComponent implements Component {
     }
 
     public boolean isHovered(int x, int y) {
-        return x > this.category.getX() && x < this.category.getX() + this.category.getWidth() && y > this.category.getY() + this.offsetY && y < this.category.getY() + 16 + this.offsetY;
+        return this.category.isInViewport(y)
+                && x > this.category.getX() && x < this.category.getX() + this.category.getWidth()
+                && y > this.category.getY() + this.offsetY && y < this.category.getY() + 16 + this.offsetY;
     }
 
 

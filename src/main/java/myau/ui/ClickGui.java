@@ -31,6 +31,7 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(AimAssist.class));
         combatModules.add(Myau.moduleManager.getModule(AutoClicker.class));
         combatModules.add(Myau.moduleManager.getModule(KillAura.class));
+        combatModules.add(Myau.moduleManager.getModule(KillAuraV2.class));
         combatModules.add(Myau.moduleManager.getModule(Wtap.class));
         combatModules.add(Myau.moduleManager.getModule(Velocity.class));
         combatModules.add(Myau.moduleManager.getModule(Freeze.class));
@@ -43,6 +44,7 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(MoreKB.class));
         combatModules.add(Myau.moduleManager.getModule(Refill.class));
         combatModules.add(Myau.moduleManager.getModule(HitSelect.class));
+        combatModules.add(Myau.moduleManager.getModule(KBDisplacer.class));
 
         List<Module> movementModules = new ArrayList<>();
         movementModules.add(Myau.moduleManager.getModule(AntiAFK.class));
@@ -67,6 +69,7 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(Tracers.class));
         renderModules.add(Myau.moduleManager.getModule(NameTags.class));
         renderModules.add(Myau.moduleManager.getModule(Xray.class));
+        renderModules.add(Myau.moduleManager.getModule(BetterChat.class));
         renderModules.add(Myau.moduleManager.getModule(TargetHUD.class));
         renderModules.add(Myau.moduleManager.getModule(Indicators.class));
         renderModules.add(Myau.moduleManager.getModule(BedESP.class));
@@ -80,6 +83,21 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(Radar.class));
         renderModules.add(Myau.moduleManager.getModule(HitParticleEffects.class));
         renderModules.add(Myau.moduleManager.getModule(TeamHealthDisplay.class));
+        renderModules.add(Myau.moduleManager.getModule(Arrows.class));
+        renderModules.add(Myau.moduleManager.getModule(BlockESP.class));
+        renderModules.add(Myau.moduleManager.getModule(BlockOverlay.class));
+        renderModules.add(Myau.moduleManager.getModule(BreakProgress.class));
+        renderModules.add(Myau.moduleManager.getModule(DamageTags.class));
+        renderModules.add(Myau.moduleManager.getModule(DamageTint.class));
+        renderModules.add(Myau.moduleManager.getModule(FallView.class));
+        renderModules.add(Myau.moduleManager.getModule(Freelook.class));
+        renderModules.add(Myau.moduleManager.getModule(Holdlook.class));
+        renderModules.add(Myau.moduleManager.getModule(ItemPhysics.class));
+        renderModules.add(Myau.moduleManager.getModule(MobESP.class));
+        renderModules.add(Myau.moduleManager.getModule(MotionBlur.class));
+        renderModules.add(Myau.moduleManager.getModule(PotionHUD.class));
+        renderModules.add(Myau.moduleManager.getModule(Saturation.class));
+        renderModules.add(Myau.moduleManager.getModule(TNTTimer.class));
 
         List<Module> playerModules = new ArrayList<>();
         playerModules.add(Myau.moduleManager.getModule(AutoHeal.class));
@@ -165,6 +183,7 @@ public class ClickGui extends GuiScreen {
 
     public void initGui() {
         super.initGui();
+        Lang.load();
     }
 
     public void drawScreen(int x, int y, float p) {

@@ -4,7 +4,7 @@ import myau.event.events.Cancellable;
 import myau.event.events.Event;
 
 /**
- * Abstract example implementation of the Cancellable interface.
+ * {@link Cancellable} 的一个抽象实现，能取消的事件直接继承它就省事了。
  *
  * @author DarkMagician6
  * @since August 27, 2013

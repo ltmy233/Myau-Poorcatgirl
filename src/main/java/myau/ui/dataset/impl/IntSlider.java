@@ -4,6 +4,7 @@ import myau.enums.ChatColors;
 import myau.property.properties.FloatProperty;
 import myau.property.properties.IntProperty;
 import myau.ui.dataset.Slider;
+import myau.util.KeyBindUtil;
 
 public class IntSlider extends Slider {
     private final IntProperty property;
@@ -47,11 +48,17 @@ public class IntSlider extends Slider {
 
     @Override
     public String getValueString() {
+        if (this.property.getName().endsWith("-key")) {
+            return KeyBindUtil.getKeyName(this.property.getValue());
+        }
         return property.getValue().toString();
     }
 
     @Override
     public String getValueColorString() {
+        if (this.property.getName().endsWith("-key")) {
+            return KeyBindUtil.getKeyName(this.property.getValue());
+        }
         return ChatColors.formatColor(property.formatValue());
     }
 

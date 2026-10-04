@@ -35,7 +35,7 @@ public class ESP extends Module {
     private Framebuffer framebuffer = null;
     private boolean outline = true;
     private boolean glow = true;
-    public final ModeProperty mode = new ModeProperty("mode", 2, new String[]{"NONE", "2D", "3D", "OUTLINE", "FAKECORNER", "FAKE2D"});
+    public final ModeProperty mode = new ModeProperty("mode", 6, new String[]{"NONE", "2D", "3D", "OUTLINE", "FAKECORNER", "FAKE2D", "ROUND2D"});
     public final ModeProperty color = new ModeProperty("color", 0, new String[]{"DEFAULT", "TEAMS", "HUD"});
     public final ModeProperty healthBar = new ModeProperty("health-bar", 0, new String[]{"NONE", "2D", "RAVEN"});
     public final BooleanProperty players = new BooleanProperty("players", true);
@@ -107,7 +107,7 @@ public class ESP extends Module {
 
     @EventTarget(Priority.HIGH)
     public void onRender(Render2DEvent event) {
-        if (this.isEnabled() && (this.mode.getValue() == 1 || this.mode.getValue() == 3 || this.healthBar.getValue() == 1)) {
+        if (this.isEnabled() && (this.mode.getValue() == 1 || this.mode.getValue() == 3 || this.mode.getValue() == 6 || this.healthBar.getValue() == 1)) {
             List<EntityPlayer> renderedEntities = TeamUtil.getLoadedEntitiesSorted().stream().filter(entity -> entity instanceof EntityPlayer && this.shouldRenderPlayer((EntityPlayer) entity)).map(EntityPlayer.class::cast).collect(Collectors.toList());
             if (!renderedEntities.isEmpty()) {
                 if (this.mode.getValue() == 3) {
@@ -146,7 +146,7 @@ public class ESP extends Module {
                     GlStateManager.popAttrib();
                     GlStateManager.popMatrix();
                 }
-                if (this.mode.getValue() == 1 || this.healthBar.getValue() == 1) {
+                if (this.mode.getValue() == 1 || this.mode.getValue() == 6 || this.healthBar.getValue() == 1) {
                     RenderUtil.enableRenderState();
                     double scaleFactor = new ScaledResolution(mc).getScaleFactor();
                     double scale = scaleFactor / Math.pow(scaleFactor, 2.0);
@@ -165,6 +165,20 @@ public class ESP extends Module {
                                 int color = this.getEntityColor(player).getRGB();
                                 RenderUtil.drawOutlineRect(x, y, z, w, 3.0F, 0, (color & 16579836) >> 2 | color & 0xFF000000);
                                 RenderUtil.drawOutlineRect(x, y, z, w, 1.5F, 0, color);
+                            }
+                            if (this.mode.getValue() == 6) {
+                                int color = this.getEntityColor(player).getRGB();
+                                float boxWidth = z - x;
+                                float boxHeight = w - y;
+                                if (boxWidth > 2.0F && boxHeight > 2.0F) {
+                                    float radius = Math.min(6.0F, Math.min(boxWidth, boxHeight) * 0.25F);
+                                    int shadow = 0x66000000;
+                                    RenderUtil.drawRoundedRectOutline(x, y, boxWidth, boxHeight, radius, 1.0F, shadow, true, true, true, true);
+                                    if (boxWidth > 4.0F && boxHeight > 4.0F) {
+                                        RenderUtil.drawRoundedRectOutline(x + 1.0F, y + 1.0F, boxWidth - 2.0F, boxHeight - 2.0F, Math.max(radius - 1.0F, 0.0F), 1.0F, shadow, true, true, true, true);
+                                    }
+                                    RenderUtil.drawRoundedRectOutline(x + 0.5F, y + 0.5F, boxWidth - 1.0F, boxHeight - 1.0F, Math.max(radius - 0.5F, 0.0F), 1.0F, color, true, true, true, true);
+                                }
                             }
                             if (this.healthBar.getValue() == 1) {
                                 float heal = player.getHealth() + player.getAbsorptionAmount();

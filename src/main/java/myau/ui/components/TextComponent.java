@@ -6,6 +6,7 @@ import myau.property.properties.BooleanProperty;
 import myau.property.properties.TextProperty;
 import myau.ui.ClickGui;
 import myau.ui.Component;
+import myau.ui.Lang;
 import myau.ui.callback.GuiInput;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL11;
@@ -32,7 +33,7 @@ public class TextComponent implements Component {
     public void draw(AtomicInteger offset) {
         GL11.glPushMatrix();
         GL11.glScaled(0.5D, 0.5D, 0.5D);
-        Minecraft.getMinecraft().fontRendererObj.drawString(this.property.getName().replace("-", " ") + ": " + ChatColors.formatColor(this.property.formatValue()), (float) ((this.module.category.getX() + 4) * 2), (float) ((this.module.category.getY() + this.offsetY + 5) * 2), -1, false);
+        Minecraft.getMinecraft().fontRendererObj.drawString(Lang.t(this.property.getName()).replace("-", " ") + ": " + ChatColors.formatColor(this.property.formatValue()), (float) ((this.module.category.getX() + 4) * 2), (float) ((this.module.category.getY() + this.offsetY + 5) * 2), -1, false);
         GL11.glPopMatrix();
     }
 
@@ -52,7 +53,7 @@ public class TextComponent implements Component {
 
     public void mouseDown(int x, int y, int button) {
         if (this.isHovered(x, y) && button == 0 && this.module.panelExpand) {
-            GuiInput.prompt(property.getName().replace("-", " "), property.getValue(), property::setValue, ClickGui.getInstance());
+            GuiInput.prompt(Lang.t(property.getName()).replace("-", " "), property.getValue(), property::setValue, ClickGui.getInstance());
         }
     }
 

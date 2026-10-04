@@ -46,7 +46,8 @@ public class NameTags extends Module {
     private static final DecimalFormat healthFormatter = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.US));
     public final FloatProperty scale = new FloatProperty("scale", 1.0F, 0.5F, 2.0F);
     public final BooleanProperty autoScale = new BooleanProperty("auto-scale", true);
-    public final PercentProperty backgroundOpacity = new PercentProperty("background", 25);
+    public final PercentProperty backgroundOpacity = new PercentProperty("background", 50);
+    public final BooleanProperty rounded = new BooleanProperty("rounded", true);
     public final BooleanProperty shadow = new BooleanProperty("shadow", true);
     public final ModeProperty distanceMode = new ModeProperty("distance", 0, new String[]{"NONE", "DEFAULT", "VAPE"});
     public final ModeProperty healthMode = new ModeProperty("health", 2, new String[]{"NONE", "HP", "HEARTS", "TAB"});
@@ -169,15 +170,23 @@ public class NameTags extends Module {
                             Color textColor = !entity.isSneaking() && !entity.isInvisible()
                                     ? new Color(0.0F, 0.0F, 0.0F, (float) this.backgroundOpacity.getValue() / 100.0F)
                                     : new Color(0.33F, 0.0F, 0.33F, (float) this.backgroundOpacity.getValue() / 100.0F);
-                            RenderUtil.enableRenderState();
-                            RenderUtil.drawRect(
-                                    (float) (-width) / 2.0F - 1.0F,
-                                    (float) (-mc.fontRendererObj.FONT_HEIGHT) - 1.0F,
-                                    (float) width / 2.0F + (this.shadow.getValue() ? 1.0F : 0.0F),
-                                    this.shadow.getValue() ? 0.0F : -1.0F,
-                                    textColor.getRGB()
-                            );
-                            RenderUtil.disableRenderState();
+                            if (this.rounded.getValue()) {
+                                float bgX = (float) (-width) / 2.0F - 3.0F;
+                                float bgY = (float) (-mc.fontRendererObj.FONT_HEIGHT) - 3.0F;
+                                float bgWidth = (float) width + 6.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
+                                float bgHeight = (float) mc.fontRendererObj.FONT_HEIGHT + 5.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
+                                RenderUtil.drawRoundedRect(bgX, bgY, bgWidth, bgHeight, 4.0F, textColor.getRGB());
+                            } else {
+                                RenderUtil.enableRenderState();
+                                RenderUtil.drawRect(
+                                        (float) (-width) / 2.0F - 3.0F,
+                                        (float) (-mc.fontRendererObj.FONT_HEIGHT) - 3.0F,
+                                        (float) width / 2.0F + 3.0F + (this.shadow.getValue() ? 1.0F : 0.0F),
+                                        2.0F + (this.shadow.getValue() ? 1.0F : 0.0F),
+                                        textColor.getRGB()
+                                );
+                                RenderUtil.disableRenderState();
+                            }
                         }
                         GlStateManager.disableDepth();
                         mc.fontRendererObj
@@ -230,21 +239,31 @@ public class NameTags extends Module {
                             }
                             if (TeamUtil.isFriend((EntityPlayer) entity)) {
                                 RenderUtil.enableRenderState();
-                                float x1 = (float) (-width) / 2.0F - 1.0F;
-                                view = (float) (-mc.fontRendererObj.FONT_HEIGHT) - 1.0F;
-                                float y1 = (float) width / 2.0F + 1.0F;
-                                float offset = this.shadow.getValue() ? 0.0F : -1.0F;
-                                int friendColor = Myau.friendManager.getColor().getRGB();
-                                RenderUtil.drawOutlineRect(x1, view, y1, offset, 1.5F, 0, friendColor);
+                                float x1 = (float) (-width) / 2.0F - 4.0F;
+                                view = (float) (-mc.fontRendererObj.FONT_HEIGHT) - 4.0F;
+                                float y1 = (float) width / 2.0F + 4.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
+                                float offset = 3.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
+                                int borderAlpha = (int) (this.backgroundOpacity.getValue() / 100.0F * 255.0F);
+                                int friendColor = (Myau.friendManager.getColor().getRGB() & 0x00FFFFFF) | (borderAlpha << 24);
+                                if (this.rounded.getValue()) {
+                                    RenderUtil.drawRoundedRectOutline(x1, view, y1 - x1, offset - view, 5.0F, 1.0F, friendColor, true, true, true, true);
+                                } else {
+                                    RenderUtil.drawOutlineRect(x1, view, y1, offset, 1.0F, 0, friendColor);
+                                }
                                 RenderUtil.disableRenderState();
                             } else if (TeamUtil.isTarget((EntityPlayer) entity)) {
                                 RenderUtil.enableRenderState();
-                                float x1 = (float) (-width) / 2.0F - 1.0F;
-                                view = (float) (-mc.fontRendererObj.FONT_HEIGHT) - 1.0F;
-                                float y1 = (float) width / 2.0F + 1.0F;
-                                float offset = this.shadow.getValue() ? 0.0F : -1.0F;
-                                int targetColor = Myau.targetManager.getColor().getRGB();
-                                RenderUtil.drawOutlineRect(x1, view, y1, offset, 1.5F, 0, targetColor);
+                                float x1 = (float) (-width) / 2.0F - 4.0F;
+                                view = (float) (-mc.fontRendererObj.FONT_HEIGHT) - 4.0F;
+                                float y1 = (float) width / 2.0F + 4.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
+                                float offset = 3.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
+                                int borderAlpha = (int) (this.backgroundOpacity.getValue() / 100.0F * 255.0F);
+                                int targetColor = (Myau.targetManager.getColor().getRGB() & 0x00FFFFFF) | (borderAlpha << 24);
+                                if (this.rounded.getValue()) {
+                                    RenderUtil.drawRoundedRectOutline(x1, view, y1 - x1, offset - view, 5.0F, 1.0F, targetColor, true, true, true, true);
+                                } else {
+                                    RenderUtil.drawOutlineRect(x1, view, y1, offset, 1.0F, 0, targetColor);
+                                }
                                 RenderUtil.disableRenderState();
                             }
                         }

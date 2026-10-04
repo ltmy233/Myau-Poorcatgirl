@@ -5,8 +5,8 @@ import myau.event.types.Priority;
 import java.lang.annotation.*;
 
 /**
- * Marks a method so that the EventManager knows that it should be registered.
- * The priority of the method is also set with this.
+ * 打上它，EventManager 就知道这个方法该登记进来收事件。
+ * 优先级也是靠它给的。
  *
  * @author DarkMagician6
  * @see Priority

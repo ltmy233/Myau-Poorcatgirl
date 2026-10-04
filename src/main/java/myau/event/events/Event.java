@@ -1,8 +1,8 @@
 package myau.event.events;
 
 /**
- * The most basic form of an event.
- * You have to implement this interface in order for the EventAPI to recognize the event.
+ * 事件的最底层接口，空的。
+ * 想让 EventAPI 认得你的事件，实现它就行。
  *
  * @author DarkMagician6
  * @since July 30, 2013

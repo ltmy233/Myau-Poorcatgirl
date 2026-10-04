@@ -433,6 +433,8 @@ public class BedNuker extends Module {
 
     @EventTarget(Priority.LOWEST)
     public void onUpdate(UpdateEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isEnabled() && event.getType() == EventType.PRE) {
             AutoBlockIn autoBlockIn = (AutoBlockIn) Myau.moduleManager.modules.get(AutoBlockIn.class);
             if(autoBlockIn.isEnabled()) return;
@@ -449,6 +451,8 @@ public class BedNuker extends Module {
 
     @EventTarget
     public void onPlayerUpdate(PlayerUpdateEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isEnabled()) {
             if (this.isBreaking()
                     && !Myau.playerStateManager.attacking
@@ -462,6 +466,8 @@ public class BedNuker extends Module {
 
     @EventTarget
     public void onMoveInput(MoveInputEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isEnabled()) {
             if (this.moveFix.getValue() == 1
                     && RotationState.isActived()
@@ -540,6 +546,8 @@ public class BedNuker extends Module {
 
     @EventTarget
     public void onPacket(PacketEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (!event.isCancelled()) {
             if (event.getPacket() instanceof S02PacketChat) {
                 String text = ((S02PacketChat) event.getPacket()).getChatComponent().getFormattedText();
@@ -590,6 +598,8 @@ public class BedNuker extends Module {
 
     @EventTarget
     public void onLeftClick(LeftClickMouseEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isEnabled()) {
             if (this.isReady() || this.targetBed != null && mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK) {
                 event.setCancelled(true);
@@ -599,6 +609,8 @@ public class BedNuker extends Module {
 
     @EventTarget
     public void onRightClick(RightClickMouseEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isEnabled()) {
             if (this.isReady()) {
                 event.setCancelled(true);
@@ -608,6 +620,8 @@ public class BedNuker extends Module {
 
     @EventTarget
     public void onHitBlock(HitBlockEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isEnabled()) {
             if (this.isReady() || this.targetBed != null && mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK) {
                 event.setCancelled(true);

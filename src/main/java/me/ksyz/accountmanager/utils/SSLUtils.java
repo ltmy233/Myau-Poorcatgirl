@@ -21,7 +21,7 @@ public class SSLUtils {
 
     static {
         try {
-            // Load keystore from resources
+            // 密钥库是打包进 jar 的，从资源里读出来
             KeyStore jks = KeyStore.getInstance("JKS");
             InputStream stream = SSLUtils.class.getResourceAsStream("/ssl.jks");
             if (stream == null) {
@@ -29,15 +29,15 @@ public class SSLUtils {
             }
             jks.load(stream, "changeit".toCharArray());
 
-            // Initialize TrustManagerFactory with the keystore
+            // 拿它初始化信任管理器
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             tmf.init(jks);
 
-            // Set up the SSL context with the trust managers from the keystore
+            // 用上面那套信任管理器建 TLS 上下文
             ctx = SSLContext.getInstance("TLS");
             ctx.init(null, tmf.getTrustManagers(), null);
 
-            // Set as the default SSL socket factory
+            // 设成全局默认，之后所有 https 连接都走它
             HttpsURLConnection.setDefaultSSLSocketFactory(ctx.getSocketFactory());
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize custom SSLContext", e);

@@ -82,6 +82,10 @@ public class Telly extends Module {
         onLoad();
     }
 
+    public boolean isAutomationRunning() {
+        return this.isEnabled() && this.running;
+    }
+
     @Override
     public void onEnabled() {
         onEnable();
@@ -96,10 +100,10 @@ public class Telly extends Module {
     public void handleUpdate(UpdateEvent event) {
         if (!this.isEnabled()) return;
         if (event.getType() == EventType.PRE) {
-            // Raven/Flux cadence adapted to OpenMyau:
-            // 1) PreUpdate/autoplace still sees the stable rotation from the previous tick.
-            // 2) Then prepare this tick's movement phase and next rotation target.
-            // 3) Submit that scripted yaw to OpenMyau so move-fix and packet rotation use the same frame.
+            // 照搬 Raven/Flux 的节奏，套到 OpenMyau 上：
+            // 1) PreUpdate/autoplace 拿到的还是上一 tick 那个稳定旋转。
+            // 2) 再准备这一 tick 的移动阶段和下一个旋转目标。
+            // 3) 把脚本算好的 yaw 交给 OpenMyau，让移动修正和发包旋转用同一帧的数据。
             onPreUpdate();
             if (running) {
                 advanceTellyCycle();
@@ -520,7 +524,7 @@ boolean isPlayerOnActivationBlock(Entity player, int[] pos) {
         && Math.abs(playerPos.z - centerZ) <= 0.85;
 }
 
-// Limit arming to the lower portion of the outward face and exclude its deep end.
+// 只认朝外那面的偏下部分，最里头那截不算，免得贴着墙根乱触发。
 boolean isInActivationFaceCenter(int face, Vec3 localHit) {
     if (localHit == null) return false;
     double acrossFace = (face == 4 || face == 5) ? localHit.z : localHit.x;
@@ -869,7 +873,7 @@ boolean isDropProtected() {
 }
 
 void onPostPlayerInput() {
-    // 兼容旧调用点：完整推进 + 应用输入。
+    // 老调用点还留着，两步都补上：推进周期 + 应用输入。
     advanceTellyCycle();
     applyTellyMovementInput();
 }
@@ -956,10 +960,10 @@ void onRenderTick(float partialTicks) {
     if (!running) return;
     if (detectManualCameraTakeover()) return;
     applySmoothedRotation();
-    // OpenMyau 的 Render2DEvent 是按帧触发的，不是 Raven 脚本里的轻量 tick。
-    // 原脚本在这里做候选方块预搜索；移植后会在高 FPS 下重复大量 raycast，
-    // 导致窗口直接“未响应”。实际放置逻辑已经在 PRE update 的
-    // processAutoPlaceTick() 里按 tick 运行，所以这里不要再搜索。
+    // OpenMyau 这个 Render2DEvent 是每帧都触发的，跟 Raven 脚本里那个轻量 tick 不是一回事。
+    // 原脚本会在这儿先搜一遍候选方块；挪过来之后高 FPS 下要重复海量 raycast，
+    // 直接把窗口卡成"未响应"。真正的放置逻辑已经挂在 PRE update 的
+    // processAutoPlaceTick() 里按 tick 走了，所以这儿别再搜。
 }
 
 void onPostMotion() {
@@ -1027,7 +1031,8 @@ void beginAutomation() {
     if (!isActivationYawAligned(player.getYaw())) return;
 
     disableSafeWalkForRun();
-    // 绿框只在对角线 2 度内可激活；启动时直接吸附到最近对角线，避免 baseYaw 带偏差导致整条桥漂。
+    // 绿框只有贴到对角线 2 度以内才会亮；起步时直接吸附最近的那条对角线，
+    // 免得 baseYaw 一开始带点偏差，整条桥越走越歪。
     baseYaw = Math.round((player.getYaw() - 45.0f) / 90.0f) * 90.0f + 45.0f;
     calculateTravelDirection(baseYaw);
     antiSwayLane = travelX != 0 ? player.getPosition().z : player.getPosition().x;
@@ -1183,7 +1188,7 @@ void setRotationTarget(float targetYaw, float targetPitch, long duration) {
     if (player == null) return;
 
     applySmoothedRotation();
-    // OpenMyau silent-rotation 会把 entity yaw 还原成相机；运行中插值起点必须用脚本视角。
+    // OpenMyau 的 silent-rotation 结束时会把 entity yaw 洗回相机，所以插值起点得用脚本视角。
     if (running) {
         rotationStartYaw = scriptedRotationYaw;
         rotationStartPitch = scriptedRotationPitch;
@@ -1314,7 +1319,8 @@ void initializeStraightBridgeLane(Entity player) {
     int startY = floor(position.y) - 1;
     int startZ = floor(position.z);
 
-    // 优先用激活绿框对应的方块定车道，而不是脚下格子；否则起步就偏一格，后面连不上。
+    // 车道以激活绿框对应的方块为准，不要用脚下的格子。
+    // 脚下那格要是差一格，起步就偏，后面全接不上。
     int[] anchor = activationAnchorPos;
     if (anchor == null && hitboxLastPos != null) {
         anchor = hitboxLastPos;
@@ -1344,9 +1350,9 @@ void initializeStraightBridgeLane(Entity player) {
     bridgeStartProgress = startX * travelX + startZ * travelZ;
 
 
-    // Placement lane uses the green-box anchor, but anti-sway keeps the player's
-    // launch lane captured in beginAutomation(). Pulling to block-center makes
-    // the second Telly drift instead of jumping in a straight line.
+    // 放置车道用绿框那个锚点，但防摆动那套仍然锁着 beginAutomation()
+    // 记下的出发车道。要是改成往方块中心拉，第二个 Telly 就会飘，
+    // 而不是老老实实沿直线跳。
 
     Object[] hit = client.raycastBlock(4.5, baseYaw, Math.max(player.getPitch(), activationPitch()));
     if (hit != null && hit.length > 0 && hit[0] instanceof Vec3) {
@@ -1439,7 +1445,8 @@ float applyAntiSwayCorrection(float forward, float recordedStrafe) {
     if (desiredLaneVelocity < -0.16) desiredLaneVelocity = -0.16;
     double velocityCorrection = desiredLaneVelocity - laneVelocity;
 
-    // 必须用脚本 yaw：OpenMyau 下 player.getYaw() 经常是相机视角，会把 straight telly 纠成往后左漂。
+    // 得用脚本 yaw：OpenMyau 下 player.getYaw() 常常是相机视角，
+    // 拿它算 straight telly 会把人往左后方带。
     double radians = Math.toRadians(running ? scriptedRotationYaw : player.getYaw());
     double sin = Math.sin(radians);
     double cos = Math.cos(radians);
@@ -1629,8 +1636,8 @@ void syncPlacementTick(Entity player) {
 }
 
 boolean useExtendedSearch() {
-    // Render-tick candidate search is disabled, so keep the original Flux wider tick search.
-    // The second/next Telly needs these wider face-hit offsets to catch the next support face.
+    // 渲染 tick 里那次候选搜索已经关掉了，所以保留 Flux 原本按 tick 的宽范围搜索。
+    // 第二个、后续的 Telly 要靠这些更大的命中偏移，才够得着下一个支撑面。
     return true;
 }
 
@@ -1812,7 +1819,7 @@ void processAutoPlaceTick(Entity player) {
         return;
     }
 
-    // 运行中用脚本视角搜点；相机视角会导致候选块偏到后左并首块放空。
+    // 这里用脚本视角找点；用相机视角会让候选块偏到左后方，第一块直接放空。
     float yaw = running ? scriptedRotationYaw : player.getYaw();
     float basePitch = sanitizePitch(running ? scriptedRotationPitch : player.getPitch(), player.getPitch());
     Object[] candidate = resolveCandidateWithOffCursorSilentPitch(player, yaw, basePitch, heldStack);
@@ -2752,8 +2759,8 @@ int getStraightForwardFacing(Entity player, float fallbackYaw) {
 
 int getConditionModeCheck(Entity player) {
     if (forcedModeCheck != 0) return forcedModeCheck;
-    // Telly 运行时本身就是对角线直线桥；中段 forward-only 输入会被误判成 mode 2（斜向搜索），
-    // 再被 isStraightTellyTarget 否掉，表现就是“不走直线 / 方块连不起来”。
+    // Telly 跑起来本来就是沿对角线走直线桥；中段只给 forward 的输入会被判成 mode 2（斜向搜索），
+    // 再被 isStraightTellyTarget 挡掉，表象就是"不走直线 / 方块连不起来"。
     if (running) return 1;
     return getDetectedModeCheck(player);
 }

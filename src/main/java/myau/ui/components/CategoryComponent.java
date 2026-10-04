@@ -2,6 +2,7 @@ package myau.ui.components;
 
 import myau.module.Module;
 import myau.ui.Component;
+import myau.ui.Lang;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
@@ -106,7 +107,7 @@ public class CategoryComponent {
             Gui.drawRect(this.x - 1, this.y, this.x + this.width + 1, this.y + this.bh + displayHeight + 4, new Color(0, 0, 0, 100).getRGB());
         }
         Gui.drawRect((this.x - 2), this.y, (this.x + this.width + 2), (this.y + this.bh + 3), new Color(0, 0, 0, 200).getRGB());
-        renderer.drawString(this.categoryName, (float) (this.x + 2), (float) (this.y + 4), -1, false);
+        renderer.drawString(Lang.t(this.categoryName), (float) (this.x + 2), (float) (this.y + 4), -1, false);
         renderer.drawString(this.categoryOpened ? "-" : "+", (float) (this.x + marginX), (float) ((double) this.y + marginY), Color.white.getRGB(), false);
         if (this.categoryOpened && !this.modulesInCategory.isEmpty()) {
             int renderHeight = 0;
@@ -117,10 +118,10 @@ public class CategoryComponent {
             GL11.glScissor((int) (this.x * scale), (int) ((sr.getScaledHeight() - bottom) * scale), (int) (this.width * scale), (int) (effectiveMaxHeight * scale));
             for (Component c2 : this.modulesInCategory) {
                 int compHeight = c2.getHeight();
+                int drawY = (int) (renderHeight - animScroll);
+                c2.setComponentStartAt(this.bh + 3 + drawY);
                 if (renderHeight + compHeight > animScroll &&
                         renderHeight < animScroll + effectiveMaxHeight) {
-                    int drawY = (int) (renderHeight - animScroll);
-                    c2.setComponentStartAt(this.bh + 3 + drawY);
                     c2.draw(new AtomicInteger(0));
                 }
                 renderHeight += compHeight;
@@ -170,6 +171,14 @@ public class CategoryComponent {
 
     public boolean insideArea(int x, int y) {
         return x >= this.x && x <= this.x + this.width && y >= this.y && y <= this.y + this.bh;
+    }
+
+    public boolean isInViewport(int mouseY) {
+        if (!this.categoryOpened) {
+            return false;
+        }
+        int top = this.y + this.bh + 3;
+        return mouseY >= top && mouseY <= top + getEffectiveMaxHeight();
     }
 
     public String getName() {

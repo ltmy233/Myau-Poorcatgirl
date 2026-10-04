@@ -4,6 +4,7 @@ import myau.Myau;
 import myau.module.modules.GuiModule;
 import myau.module.modules.HUD;
 import myau.ui.Component;
+import myau.ui.Lang;
 import myau.ui.dataset.BindStage;
 import myau.util.KeyBindUtil;
 import net.minecraft.client.Minecraft;
@@ -30,7 +31,7 @@ public class BindComponent implements Component {
     public void draw(AtomicInteger offset) {
         GL11.glPushMatrix();
         GL11.glScaled(0.5D, 0.5D, 0.5D);
-        String displayText = this.isBinding ? BindStage.binding : BindStage.bind + ": " + KeyBindUtil.getKeyName(this.parentModule.mod.getKey());
+        String displayText = this.isBinding ? Lang.t(BindStage.binding) : Lang.t(BindStage.bind) + ": " + KeyBindUtil.getKeyName(this.parentModule.mod.getKey());
         this.renderText(displayText, ((HUD) Myau.moduleManager.modules.get(HUD.class)).getColor(System.currentTimeMillis(), offset.get()).getRGB());
         GL11.glPopMatrix();
     }

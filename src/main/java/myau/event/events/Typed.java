@@ -1,21 +1,17 @@
 package myau.event.events;
 
 /**
- * Simple interface that should be implemented in typed events.
- * A typed event is an event that can be called on multiple places
- * with the type defining where it was called.
+ * 带"类型"的事件实现这个接口。
+ * 同一个事件可能在好几个地方都会发，用类型标出这次是哪儿发的。
  * <p/>
- * The type should be defined in the constructor when the new instance
- * of the event is created.
+ * 类型在构造器里给定，实例一造出来就固定了。
  *
  * @author DarkMagician6
  * @since August 27, 2013
  */
 public interface Typed {
     /**
-     * Gets the current type of the event.
-     *
-     * @return The type ID of the event.
+     * @return 这个事件当前的类型 ID。
      */
     byte getType();
 }

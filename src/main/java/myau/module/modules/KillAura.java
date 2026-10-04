@@ -400,6 +400,8 @@ public class KillAura extends Module {
 
     @EventTarget(Priority.LOW)
     public void onUpdate(UpdateEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (event.getType() == EventType.POST && this.blinkReset) {
             this.blinkReset = false;
             Myau.blinkManager.setBlinkState(false, BlinkModules.AUTO_BLOCK);
@@ -781,6 +783,8 @@ public class KillAura extends Module {
 
     @EventTarget(Priority.LOWEST)
     public void onPacket(PacketEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isEnabled() && !event.isCancelled() && mc.thePlayer != null && mc.theWorld != null) {
             if (event.getPacket() instanceof C07PacketPlayerDigging) {
                 C07PacketPlayerDigging packet = (C07PacketPlayerDigging) event.getPacket();
@@ -838,6 +842,8 @@ public class KillAura extends Module {
 
     @EventTarget
     public void onMove(MoveInputEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isEnabled()) {
             if (this.moveFix.getValue() == 1
                     && this.rotations.getValue() != 3
@@ -879,6 +885,8 @@ public class KillAura extends Module {
 
     @EventTarget
     public void onLeftClick(LeftClickMouseEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isBlocking) {
             event.setCancelled(true);
         } else {
@@ -890,6 +898,8 @@ public class KillAura extends Module {
 
     @EventTarget
     public void onRightClick(RightClickMouseEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isBlocking) {
             event.setCancelled(true);
         } else {
@@ -901,6 +911,8 @@ public class KillAura extends Module {
 
     @EventTarget
     public void onHitBlock(HitBlockEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isBlocking) {
             event.setCancelled(true);
         } else {

@@ -1,7 +1,7 @@
 package myau.event.types;
 
 /**
- * Types that can be used for typed events.
+ * 带类型的事件能用的几个类型。
  *
  * @author DarkMagician6
  * @since August 27, 2013

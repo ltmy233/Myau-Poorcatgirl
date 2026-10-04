@@ -114,7 +114,7 @@ public class Events {
                     }
                 }
             } catch (Exception e) {
-                //
+                // 这一段只是顺手改改记着的时间，失败了不该影响正常流程
             }
         }
     }
