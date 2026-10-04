@@ -1,5 +1,0 @@
-Fixed : autoblock ghost hitting
-Remove fireball high: 
-Bans with via
-
-improved : Killaura ghost hits on 2+ targets

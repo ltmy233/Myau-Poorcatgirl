@@ -1,1 +1,0 @@
-Trying sideways rotations, + diagonal probably ghosts.

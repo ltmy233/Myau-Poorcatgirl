@@ -1,2 +1,0 @@
-blatant bla bla 
-.binds list for binds

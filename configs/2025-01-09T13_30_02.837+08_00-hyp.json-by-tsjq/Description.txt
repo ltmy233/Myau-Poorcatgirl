@@ -1,3 +1,0 @@
-Use keepy if you don't have speed 2, no keepy if u have it.
-
-.bind list

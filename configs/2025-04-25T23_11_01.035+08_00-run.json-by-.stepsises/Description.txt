@@ -1,3 +1,0 @@
-run config is bassically hacker but with longjump high 
-reverse velo doesnt work on 1.20 I think
-hacker is based on @michaelstetson  config just changed the scaffold and noslow
