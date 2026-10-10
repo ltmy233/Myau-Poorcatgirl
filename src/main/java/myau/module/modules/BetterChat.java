@@ -17,6 +17,7 @@ public class BetterChat extends Module {
     public final IntProperty yOffset = new IntProperty("y-offset", 0, -300, 300);
     public final FloatProperty scale = new FloatProperty("scale", mc.gameSettings.chatScale, 0.5F, 2.0F);
     public final FloatProperty width = new FloatProperty("width", mc.gameSettings.chatWidth, 0.0F, 1.0F);
+    public final IntProperty animationSpeed = new IntProperty("animation-speed", 210, 120, 500);
 
     public BetterChat() {
         super("BetterChat", true);

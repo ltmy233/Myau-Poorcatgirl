@@ -36,7 +36,30 @@ public final class Lang {
         put("AimAssist", "自瞄");
         put("AutoClicker", "连点");
         put("KillAura", "杀戮光环");
-        put("KillAuraV2", "杀戮光环V2");
+        put("aps", "每秒攻击");
+        put("auto-block", "自动格挡");
+        put("attack-range", "攻击距离");
+        put("swing-range", "挥击距离");
+        put("block-range", "格挡距离");
+        put("rotations", "旋转模式");
+        put("smoothing", "旋转平滑");
+        put("sort", "目标排序");
+        put("switch-delay", "切换延迟");
+        put("targets", "目标数量");
+        put("target-invis", "攻击隐身目标");
+        put("attack-mobs", "攻击生物");
+        put("disable-in-inventory", "打开背包时禁用");
+        put("disable-while-blocking", "格挡时禁用");
+        put("disable-while-mining", "挖掘时禁用");
+        put("hit-through-blocks", "穿墙攻击");
+        put("ignore-teammates", "忽略队友");
+        put("manual-block", "手动格挡");
+        put("prioritize-enemies", "优先敌人");
+        put("require-mouse-down", "需要按住鼠标");
+        put("silent-swing", "静默挥击");
+        put("weapon-only", "仅武器");
+        put("info", "信息显示");
+        put("show-target", "显示目标");
         put("WTap", "WTap");
         put("Velocity", "防击退");
         put("Freeze", "冻结");
@@ -49,9 +72,10 @@ public final class Lang {
         put("MoreKB", "更多击退");
         put("Refill", "自动补充");
         put("HitSelect", "点击选择");
-        put("KBDisplacer", "击退方向");
+        put("HitFlick", "击退方向");
         put("AntiAFK", "反挂机");
         put("Fly", "飞行");
+        put("AirStall", "卡空");
         put("Speed", "速度");
         put("LongJump", "远跳");
         put("Sprint", "自动疾跑");
@@ -78,6 +102,7 @@ public final class Lang {
         put("ViewClip", "视角穿透");
         put("NoHurtCam", "无受伤镜头");
         put("HUD", "HUD");
+        put("Fishcake", "鱼饼");
         put("ClickGui", "点击介面");
         put("ChestESP", "箱子ESP");
         put("Trajectories", "轨迹预测");
@@ -171,6 +196,44 @@ public final class Lang {
         put("diamonds", "钻石");
         put("diamonds-tracers", "钻石追踪线");
         put("direction-check", "方向检查");
+        put("attack-direction", "攻击方向");
+        put("glow-size", "泛光大小");
+        put("glow-opacity", "泛光透明度");
+        put("glow-blur", "泛光模糊度");
+        put("animation-speed", "动画速度");
+        put("NONE", "无");
+        put("DEFAULT", "默认");
+        put("HUD", "HUD");
+        put("SILENT", "静默");
+        put("LOCK_VIEW", "锁定视角");
+        put("LOCK VIEW", "锁定视角");
+        put("ATTACK", "攻击");
+        put("SWING", "挥击");
+        put("MANUAL", "手动");
+        put("VANILLA", "原版");
+        put("FAKE", "伪格挡");
+        put("PARTIAL", "部分格挡");
+        put("INTERACT A", "交互A");
+        put("INTERACT B", "交互B");
+        put("SWAP", "切换");
+        put("HYPIXEL A", "Hypixel A");
+        put("HYPIXEL B", "Hypixel B");
+        put("DISTANCE", "距离");
+        put("HEALTH", "生命值");
+        put("HURT_TIME", "受伤时间");
+        put("YAW", "水平角");
+        put("RAINBOW", "彩虹");
+        put("CHROMA", "彩色渐变");
+        put("LEFT", "左");
+        put("CENTER", "居中");
+        put("RIGHT", "右");
+        put("TOP", "上");
+        put("MIDDLE", "中");
+        put("BOTTOM", "下");
+        put("OUTGOING", "发送");
+        put("BIDIRECTIONAL", "双向");
+        put("GAMMA", "伽马");
+        put("EFFECT", "药水效果");
         put("disable-safewalk", "禁用安全行走");
         put("display", "显示样式");
         put("drop-shadow", "阴影");
@@ -628,6 +691,17 @@ public final class Lang {
         put("show-durability", "显示耐久");
         put("show-yourself", "显示自己");
 
+        put("auto-send", "自动发送");
+        put("breadcrumbs", "轨迹面包屑");
+        put("direction", "方向");
+        put("flick-delay", "甩动延迟");
+        put("randomize-offset", "随机偏移");
+        put("randomize-offset-range", "随机偏移范围");
+        put("select-hits", "选择时机");
+        put("spawn-fake", "生成假人");
+        put("strafe-invert", "侧移反转");
+        put("use-blink", "扣包");
+
         load();
     }
 
@@ -651,6 +725,14 @@ public final class Lang {
             return en;
         }
         String zh = DICT.get(en);
+        if (zh == null) {
+            for (Map.Entry<String, String> entry : DICT.entrySet()) {
+                if (entry.getKey().equalsIgnoreCase(en)) {
+                    zh = entry.getValue();
+                    break;
+                }
+            }
+        }
         if (zh == null && en.indexOf(' ') >= 0) {
             zh = DICT.get(en.replace(' ', '-'));
         }

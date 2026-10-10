@@ -245,7 +245,12 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback {
 
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         myau.wallpaper.MenuBackground.draw(new ScaledResolution(mc));
-        myau.util.LiquidGlass.draw(this.glassX, this.glassY, this.glassW, this.glassH, 12.0F, this.width, this.height);
+        myau.module.modules.HUD hud = myau.module.modules.HUD.get();
+        boolean useGlass = hud == null || hud.glassOn(hud.glassGui);
+        if (!useGlass || !myau.util.FrostedGlass.drawFrosted(this.glassX, this.glassY, this.glassW, this.glassH, 12.0F,
+                this.width, this.height, 1.0F)) {
+            myau.util.RenderUtil.drawRoundedRect(this.glassX, this.glassY, this.glassW, this.glassH, 12.0F, 0x59000000);
+        }
 
         // 标题，能用渲染器就交给它，不行再退回老的硬画
         if (!TitleRenderer.render(this.width, this.height)) {

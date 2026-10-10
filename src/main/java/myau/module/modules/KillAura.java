@@ -102,29 +102,36 @@ public class KillAura extends Module {
         return this.isBlocking ? (long) (1000.0F / RandomUtil.nextLong(this.autoBlockMinCPS.getValue().longValue(), this.autoBlockMaxCPS.getValue().longValue())) : 1000L / RandomUtil.nextLong(this.minCPS.getValue(), this.maxCPS.getValue());
     }
 
+    private boolean isServerSafeAttackRange() {
+        return this.target != null && RotationUtil.distanceToBox(this.target.getBox()) <= this.attackRange.getValue();
+    }
+
     private boolean performAttack(float yaw, float pitch) {
         if (!Myau.playerStateManager.digging && !Myau.playerStateManager.placing) {
             if (this.isPlayerBlocking() && this.autoBlock.getValue() != 1) {
                 return false;
             } else if (this.attackDelayMS > 0L) {
                 return false;
+            } else if (!this.isServerSafeAttackRange()) {
+                return false;
             } else {
+                AttackEvent event = new AttackEvent(this.target.getEntity());
+                EventManager.call(event);
+                if (event.isCancelled()) {
+                    return false;
+                }
                 this.attackDelayMS = this.attackDelayMS + this.getAttackDelay();
                 mc.thePlayer.swingItem();
-                if ((this.rotations.getValue() != 0 || !this.isBoxInAttackRange(this.target.getBox()))
-                        && RotationUtil.rayTrace(this.target.getBox(), yaw, pitch, this.attackRange.getValue()) == null) {
+                if (RotationUtil.rayTrace(this.target.getBox(), yaw, pitch, this.attackRange.getValue()) == null) {
                     return false;
-                } else {
-                    AttackEvent event = new AttackEvent(this.target.getEntity());
-                    EventManager.call(event);
-                    ((IAccessorPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
-                    PacketUtil.sendPacket(new C02PacketUseEntity(this.target.getEntity(), Action.ATTACK));
-                    if (mc.playerController.getCurrentGameType() != GameType.SPECTATOR) {
-                        PlayerUtil.attackEntity(this.target.getEntity());
-                    }
-                    this.hitRegistered = true;
-                    return true;
                 }
+                ((IAccessorPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
+                PacketUtil.sendPacket(new C02PacketUseEntity(this.target.getEntity(), Action.ATTACK));
+                if (mc.playerController.getCurrentGameType() != GameType.SPECTATOR) {
+                    PlayerUtil.attackEntity(this.target.getEntity());
+                }
+                this.hitRegistered = true;
+                return true;
             }
         } else {
             return false;
@@ -671,7 +678,9 @@ public class KillAura extends Module {
                     }
                 }
                 boolean attacked = false;
-                if (this.isBoxInSwingRange(this.target.getBox())) {
+                boolean inSwingRange = this.isBoxInSwingRange(this.target.getBox());
+                boolean inAttackRange = this.isBoxInAttackRange(this.target.getBox());
+                if (inSwingRange || inAttackRange) {
                     if (this.rotations.getValue() == 2 || this.rotations.getValue() == 3) {
                         float[] rotations = RotationUtil.getRotationsToBox(
                                 this.target.getBox(),
@@ -688,7 +697,7 @@ public class KillAura extends Module {
                             event.setPervRotation(rotations[0], 1);
                         }
                     }
-                    if (attack) {
+                    if (attack && inAttackRange) {
                         attacked = this.performAttack(event.getNewYaw(), event.getNewPitch());
                     }
                 }

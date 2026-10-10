@@ -68,10 +68,6 @@ public class TargetHUD extends Module {
     public final BooleanProperty chatPreview = new BooleanProperty("chat-preview", false);
 
     private EntityLivingBase resolveTarget() {
-        KillAuraV2 killAuraV2 = (KillAuraV2) Myau.moduleManager.modules.get(KillAuraV2.class);
-        if (killAuraV2 != null && killAuraV2.isEnabled() && TeamUtil.isEntityLoaded(killAuraV2.getTarget())) {
-            return killAuraV2.getTarget();
-        }
         KillAura killAura = (KillAura) Myau.moduleManager.modules.get(KillAura.class);
         if (killAura.isEnabled() && TeamUtil.isEntityLoaded(killAura.getTarget())) {
             return killAura.getTarget();
@@ -279,7 +275,16 @@ public class TargetHUD extends Module {
         float y = resolution.getScaledHeight() * 0.5F + 15.0F + offY.getValue();
         int alpha = Math.max(1, Math.round(opacity * 255.0F));
         int accent = getTargetColor(ravenTarget).getRGB() & 0xFFFFFF;
-        RenderUtil.drawRoundedRect(x, y, width, 35.0F, 8.0F, (Math.min(alpha, 110) << 24));
+        // 卡片底改玻璃：阴影一律不再画，改由 FrostedGlass 出白色细描边 + 主题色柔光
+        HUD hud = HUD.get();
+        boolean glassDrawn = false;
+        if (hud == null || hud.glassOn(hud.glassTarget)) {
+            glassDrawn = myau.util.FrostedGlass.draw(x, y, width, 35.0F, 8.0F,
+                    resolution.getScaledWidth(), resolution.getScaledHeight(), opacity, true);
+        }
+        if (!glassDrawn) {
+            RenderUtil.drawRoundedRect(x, y, width, 35.0F, 8.0F, (Math.min(alpha, 110) << 24));
+        }
         float contentX = x + 8.0F + avatar;
         RenderUtil.drawRoundedRect(contentX - 2.0F, y + 25.0F, width - avatar - 12.0F, 5.0F, 2.0F, (Math.min(alpha, 110) << 24));
         float t = Math.min(1.0F, Math.max(0.0F, (now - ravenHealthChanged) / 350.0F));

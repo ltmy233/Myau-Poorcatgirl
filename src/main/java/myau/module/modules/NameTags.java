@@ -13,6 +13,7 @@ import myau.property.properties.*;
 import myau.property.properties.BooleanProperty;
 import myau.property.properties.ModeProperty;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -170,22 +171,32 @@ public class NameTags extends Module {
                             Color textColor = !entity.isSneaking() && !entity.isInvisible()
                                     ? new Color(0.0F, 0.0F, 0.0F, (float) this.backgroundOpacity.getValue() / 100.0F)
                                     : new Color(0.33F, 0.0F, 0.33F, (float) this.backgroundOpacity.getValue() / 100.0F);
-                            if (this.rounded.getValue()) {
-                                float bgX = (float) (-width) / 2.0F - 3.0F;
-                                float bgY = (float) (-mc.fontRendererObj.FONT_HEIGHT) - 3.0F;
-                                float bgWidth = (float) width + 6.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
-                                float bgHeight = (float) mc.fontRendererObj.FONT_HEIGHT + 5.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
-                                RenderUtil.drawRoundedRect(bgX, bgY, bgWidth, bgHeight, 4.0F, textColor.getRGB());
-                            } else {
-                                RenderUtil.enableRenderState();
-                                RenderUtil.drawRect(
-                                        (float) (-width) / 2.0F - 3.0F,
-                                        (float) (-mc.fontRendererObj.FONT_HEIGHT) - 3.0F,
-                                        (float) width / 2.0F + 3.0F + (this.shadow.getValue() ? 1.0F : 0.0F),
-                                        2.0F + (this.shadow.getValue() ? 1.0F : 0.0F),
-                                        textColor.getRGB()
-                                );
-                                RenderUtil.disableRenderState();
+                            float bgX = (float) (-width) / 2.0F - 3.0F;
+                            float bgY = (float) (-mc.fontRendererObj.FONT_HEIGHT) - 3.0F;
+                            float bgWidth = (float) width + 6.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
+                            float bgHeight = (float) mc.fontRendererObj.FONT_HEIGHT + 5.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
+                            // 名牌在 3D 空间里画，FrostedGlass 自己会把这四角投到屏幕坐标去
+                            HUD hud = HUD.get();
+                            boolean glassDrawn = false;
+                            if (hud == null || hud.glassOn(hud.glassTarget)) {
+                                ScaledResolution sr = new ScaledResolution(mc);
+                                glassDrawn = myau.util.FrostedGlass.draw(bgX, bgY, bgWidth, bgHeight, 4.0F,
+                                        sr.getScaledWidth(), sr.getScaledHeight(), 1.0F, true);
+                            }
+                            if (!glassDrawn) {
+                                if (this.rounded.getValue()) {
+                                    RenderUtil.drawRoundedRect(bgX, bgY, bgWidth, bgHeight, 4.0F, textColor.getRGB());
+                                } else {
+                                    RenderUtil.enableRenderState();
+                                    RenderUtil.drawRect(
+                                            bgX,
+                                            bgY,
+                                            (float) width / 2.0F + 3.0F + (this.shadow.getValue() ? 1.0F : 0.0F),
+                                            2.0F + (this.shadow.getValue() ? 1.0F : 0.0F),
+                                            textColor.getRGB()
+                                    );
+                                    RenderUtil.disableRenderState();
+                                }
                             }
                         }
                         GlStateManager.disableDepth();

@@ -6,6 +6,7 @@ import myau.util.RenderUtil;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiNewChat;
 import net.minecraft.client.gui.ChatLine;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ChatComponentText;
@@ -68,6 +69,7 @@ public abstract class MixinGuiNewChat extends Gui {
     private int betterChatPanelRight;
     private int betterChatPanelColor;
     private float betterChatFrameDeltaMs;
+    private float betterChatOpenPercent;
     private boolean betterChatDrawnThisFrame;
     private boolean betterChatDrawActive;
     private float betterChatScrollPosition;
@@ -77,6 +79,7 @@ public abstract class MixinGuiNewChat extends Gui {
     private float betterChatDrawTop;
     private float betterChatDrawRight;
     private float betterChatDrawBottom;
+    private float betterChatPanelHeight;
 
     private BetterChat betterChat() {
         if (Myau.moduleManager == null) {
@@ -96,6 +99,15 @@ public abstract class MixinGuiNewChat extends Gui {
         this.betterChatPrevMillis = current;
         this.betterChatFrameDeltaMs = betterChatClamp((float) diff, 0.0F, 100.0F);
         this.betterChatDrawnThisFrame = false;
+        float openTarget = this.getChatOpen() ? 1.0F : 0.0F;
+        BetterChat speedMod = this.betterChat();
+        float animationDuration = speedMod == null ? 210.0F : speedMod.animationSpeed.getValue();
+        float openStep = this.betterChatFrameDeltaMs / animationDuration;
+        if (openTarget > this.betterChatOpenPercent) {
+            this.betterChatOpenPercent = Math.min(openTarget, this.betterChatOpenPercent + openStep);
+        } else {
+            this.betterChatOpenPercent = Math.max(openTarget, this.betterChatOpenPercent - openStep);
+        }
         this.betterChatNewMessageOffset += (0.0F - this.betterChatNewMessageOffset)
                 * (1.0F - (float) Math.exp(-this.betterChatFrameDeltaMs / 85.0F));
         if (Math.abs(this.betterChatNewMessageOffset) < 0.05F) this.betterChatNewMessageOffset = 0.0F;
@@ -126,6 +138,7 @@ public abstract class MixinGuiNewChat extends Gui {
 
     @Inject(method = "drawChat", at = @At("RETURN"))
     private void betterChatEarlyReturn(CallbackInfo ci) {
+        myau.util.FrostedGlass.disableScissor();
         if (!this.betterChatDrawnThisFrame) {
             this.betterChatDrawActive = false;
             this.betterChatPanelPending = false;
@@ -150,8 +163,35 @@ public abstract class MixinGuiNewChat extends Gui {
         if (mod == null || !mod.isEnabled()) {
             return;
         }
-        GlStateManager.translate(mod.xOffset.getValue(),
-                mod.yOffset.getValue() + this.betterChatScrollOffset + this.betterChatNewMessageOffset, 0.0F);
+        GlStateManager.translate(mod.xOffset.getValue(), mod.yOffset.getValue(), 0.0F);
+        if (this.getChatOpen() && this.betterChatOpenPercent < 0.999F) {
+            float chatBottom = 0.0F;
+            GlStateManager.translate(0.0F, chatBottom, 0.0F);
+            GlStateManager.scale(1.0F, this.betterChatOpenPercent, 1.0F);
+            GlStateManager.translate(0.0F, -chatBottom, 0.0F);
+        }
+    }
+
+    private void betterChatApplyScroll() {
+        float contentOffset = this.betterChatScrollOffset + this.betterChatNewMessageOffset;
+        if (contentOffset == 0.0F) {
+            return;
+        }
+        float scale = this.getChatScale();
+        GlStateManager.translate(0.0F, scale == 0.0F
+                ? contentOffset
+                : contentOffset / scale, 0.0F);
+    }
+
+    private void betterChatCancelScroll() {
+        float contentOffset = this.betterChatScrollOffset + this.betterChatNewMessageOffset;
+        if (contentOffset == 0.0F) {
+            return;
+        }
+        float scale = this.getChatScale();
+        GlStateManager.translate(0.0F, scale == 0.0F
+                ? -contentOffset
+                : -contentOffset / scale, 0.0F);
     }
 
     @Redirect(
@@ -174,7 +214,9 @@ public abstract class MixinGuiNewChat extends Gui {
         if (mod.rounded.getValue()) {
             return;
         }
+        betterChatCancelScroll();
         drawRect(left, top, right, bottom, color);
+        betterChatApplyScroll();
     }
 
     @Inject(
@@ -191,8 +233,8 @@ public abstract class MixinGuiNewChat extends Gui {
         BetterChat mod = this.betterChat();
         if (mod != null && mod.isEnabled() && mod.rounded.getValue() && !mod.clear.getValue()) {
             int lineLimit = this.getLineCount();
-            int visibleLines = 0;
             int strongestAlpha = 0;
+            int visibleLines = 0;
             boolean chatOpen = this.getChatOpen();
             for (int i = 0; i < lineLimit && i + this.scrollPos < this.drawnChatLines.size(); i++) {
                 ChatLine line = this.drawnChatLines.get(i + this.scrollPos);
@@ -206,13 +248,27 @@ public abstract class MixinGuiNewChat extends Gui {
                 strongestAlpha = Math.max(strongestAlpha, alpha);
                 visibleLines++;
             }
-            if (visibleLines > 0 && strongestAlpha > 3) {
+            if (lineLimit > 0 && strongestAlpha > 3) {
                 float opacity = this.mc.gameSettings.chatOpacity * 0.9F + 0.1F;
-                int alpha = (int) (strongestAlpha * opacity * 0.5F);
+                int alpha = (int) ((float) strongestAlpha * opacity * 0.5F);
                 int color = Math.max(0, Math.min(255, alpha)) << 24;
                 float width = this.getChatWidth() / this.getChatScale() + 4.0F;
-                float height = visibleLines * 9.0F;
-                RenderUtil.drawRoundedRect(0.0F, -height, width, height, 6.0F, color);
+                float targetHeight = Math.min(BETTER_CHAT_MAX_PANEL_HEIGHT, (float) visibleLines * 9.0F);
+                if (this.getChatOpen()) targetHeight = BETTER_CHAT_MAX_PANEL_HEIGHT;
+                float panelStep = 1.0F - (float) Math.exp(-this.betterChatFrameDeltaMs / 120.0F);
+                this.betterChatPanelHeight += (targetHeight - this.betterChatPanelHeight) * panelStep;
+                if (Math.abs(targetHeight - this.betterChatPanelHeight) < 0.25F) {
+                    this.betterChatPanelHeight = targetHeight;
+                }
+                float height = Math.max(9.0F, this.betterChatPanelHeight);
+                ScaledResolution scaled = new ScaledResolution(this.mc);
+                float alphaScale = Math.min(1.0F, Math.max(0.0F, (float) alpha) / 127.0F);
+                myau.module.modules.HUD hud = myau.module.modules.HUD.get();
+                boolean useGlass = hud == null || hud.glassOn(hud.glassChat);
+                if (!useGlass || !myau.util.FrostedGlass.draw(0.0F, -height, width, height, 6.0F,
+                        scaled.getScaledWidth(), scaled.getScaledHeight(), alphaScale)) {
+                    RenderUtil.drawRoundedRect(0.0F, -height, width, height, 6.0F, color);
+                }
             }
             this.betterChatDrawActive = false;
             this.betterChatPanelPending = false;
@@ -220,8 +276,11 @@ public abstract class MixinGuiNewChat extends Gui {
             this.betterChatPanelTop = Integer.MAX_VALUE;
             this.betterChatPanelBottom = Integer.MIN_VALUE;
             this.betterChatPanelRight = 0;
-            return;
-        }
+                betterChatApplyScroll();
+                return;
+            }
+            float step = 1.0F - (float) Math.exp(-this.betterChatFrameDeltaMs / 120.0F);
+            this.betterChatPanelHeight += (0.0F - this.betterChatPanelHeight) * step;
         boolean wantPanel = mod != null && mod.isEnabled() && mod.rounded.getValue() && !mod.clear.getValue();
         boolean hasTarget = wantPanel && this.betterChatPanelPending
                 && this.betterChatPanelBottom > this.betterChatPanelTop
@@ -267,11 +326,11 @@ public abstract class MixinGuiNewChat extends Gui {
             } else {
                 float delta = this.betterChatFrameDeltaMs;
                 float rate = targetTop < this.betterChatDrawTop ? 0.045F : 0.026F;
-                float step = 1.0F - (float) Math.exp((double) (-(rate * delta)));
-                this.betterChatDrawLeft += (targetLeft - this.betterChatDrawLeft) * step;
-                this.betterChatDrawTop += (targetTop - this.betterChatDrawTop) * step;
-                this.betterChatDrawRight += (targetRight - this.betterChatDrawRight) * step;
-                this.betterChatDrawBottom += (targetBottom - this.betterChatDrawBottom) * step;
+                 float boundsStep = 1.0F - (float) Math.exp((double) (-(rate * delta)));
+                 this.betterChatDrawLeft += (targetLeft - this.betterChatDrawLeft) * boundsStep;
+                 this.betterChatDrawTop += (targetTop - this.betterChatDrawTop) * boundsStep;
+                 this.betterChatDrawRight += (targetRight - this.betterChatDrawRight) * boundsStep;
+                 this.betterChatDrawBottom += (targetBottom - this.betterChatDrawBottom) * boundsStep;
                 if (Math.abs(targetLeft - this.betterChatDrawLeft) < 0.5F) {
                     this.betterChatDrawLeft = targetLeft;
                 }
@@ -321,6 +380,7 @@ public abstract class MixinGuiNewChat extends Gui {
         this.betterChatPanelTop = Integer.MAX_VALUE;
         this.betterChatPanelBottom = Integer.MIN_VALUE;
         this.betterChatPanelRight = 0;
+        betterChatApplyScroll();
     }
 
     @ModifyArg(

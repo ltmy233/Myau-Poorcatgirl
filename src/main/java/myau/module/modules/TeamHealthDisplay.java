@@ -27,7 +27,7 @@ public class TeamHealthDisplay extends Module {
     public final BooleanProperty showTicks = new BooleanProperty("show-ticks", true);
     public final BooleanProperty onlyTeam = new BooleanProperty("only-team", false);
     public final BooleanProperty onlyEnemy = new BooleanProperty("only-enemy", false);
-    public final ModeProperty teamCheckMode = new ModeProperty("team-check-mode", 0, new String[]{"FRIEND_MANAGER", "SCOREBOARD_COLOR", "OFF"}); // New property
+    public final ModeProperty teamCheckMode = new ModeProperty("team-check-mode", 0, new String[]{"FRIEND_MANAGER", "SCOREBOARD_COLOR", "OFF"});
 
     public TeamHealthDisplay() {
         super("TeamHealthDisplay", false);

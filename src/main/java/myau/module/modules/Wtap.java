@@ -37,6 +37,14 @@ public class Wtap extends Module {
 
     @EventTarget(Priority.LOWEST)
     public void onMoveInput(MoveInputEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) {
+            this.active = false;
+            this.stopForward = false;
+            this.delayTicks = 0L;
+            this.durationTicks = 0L;
+            return;
+        }
         if (this.active) {
             if (!this.stopForward && !this.canTrigger()) {
                 this.active = false;
@@ -64,6 +72,8 @@ public class Wtap extends Module {
     @EventTarget
     public void onPacket(PacketEvent event) {
         if (this.isEnabled() && !event.isCancelled() && event.getType() == EventType.SEND) {
+            Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+            if (telly != null && telly.isAutomationRunning()) return;
             if (event.getPacket() instanceof C02PacketUseEntity
                     && ((C02PacketUseEntity) event.getPacket()).getAction() == Action.ATTACK
                     && !this.active

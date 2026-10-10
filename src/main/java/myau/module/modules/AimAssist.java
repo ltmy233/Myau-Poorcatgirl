@@ -71,7 +71,10 @@ public class AimAssist extends Module {
 
     @EventTarget
     public void onTick(TickEvent event) {
-        if (this.isEnabled() && event.getType() == EventType.POST && mc.currentScreen == null) {
+        Telly telly = Myau.moduleManager == null ? null
+                : (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (this.isEnabled() && (telly == null || !telly.isAutomationRunning())
+                && event.getType() == EventType.POST && mc.currentScreen == null) {
             if (!(Boolean) this.weaponOnly.getValue()
                     || ItemUtil.hasRawUnbreakingEnchant()
                     || this.allowTools.getValue() && ItemUtil.isHoldingTool()) {

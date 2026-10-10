@@ -83,12 +83,14 @@ public class Myau {
         moduleManager.modules.put(FastPlace.class, new FastPlace());
         moduleManager.modules.put(Freeze.class, new Freeze());
         moduleManager.modules.put(Fly.class, new Fly());
+        moduleManager.modules.put(AirStall.class, new AirStall());
         moduleManager.modules.put(FullBright.class, new FullBright());
         moduleManager.modules.put(GhostHand.class, new GhostHand());
         moduleManager.modules.put(GuiModule.class, new GuiModule());
         moduleManager.modules.put(HitSelect.class, new HitSelect());
-        moduleManager.modules.put(KBDisplacer.class, new KBDisplacer());
+        moduleManager.modules.put(HitFlick.class, new HitFlick());
         moduleManager.modules.put(BetterChat.class, new BetterChat());
+        moduleManager.modules.put(Fishcake.class, new Fishcake());
         moduleManager.modules.put(HUD.class, new HUD());
         moduleManager.modules.put(MoreKB.class, new MoreKB());
         moduleManager.modules.put(Indicators.class, new Indicators());
@@ -100,7 +102,6 @@ public class Myau {
         moduleManager.modules.put(KeepSprint.class, new KeepSprint());
         moduleManager.modules.put(HitBox.class, new HitBox());
         moduleManager.modules.put(KillAura.class, new KillAura());
-        moduleManager.modules.put(KillAuraV2.class, new KillAuraV2());
         moduleManager.modules.put(LagRange.class, new LagRange());
         moduleManager.modules.put(LightningTracker.class, new LightningTracker());
         moduleManager.modules.put(LongJump.class, new LongJump());

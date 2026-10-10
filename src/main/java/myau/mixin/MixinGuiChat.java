@@ -3,8 +3,10 @@ package myau.mixin;
 import myau.Myau;
 import myau.module.modules.BetterChat;
 import myau.util.RenderUtil;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiChat;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,6 +41,13 @@ public abstract class MixinGuiChat {
         float width = (float) (right - left);
         float height = (float) (bottom - top);
         float radius = Math.min(5.0F, height * 0.5F);
-        RenderUtil.drawRoundedRect((float) left, (float) top, width, height, radius, color);
+        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        // 输入条做成实心玻璃；开关关了或画不出来就还是原来那块底
+        myau.module.modules.HUD hud = myau.module.modules.HUD.get();
+        boolean useGlass = hud == null || hud.glassOn(hud.glassGui);
+        if (!useGlass || !myau.util.FrostedGlass.draw((float) left, (float) top, width, height, radius,
+                sr.getScaledWidth(), sr.getScaledHeight(), 1.0F)) {
+            RenderUtil.drawRoundedRect((float) left, (float) top, width, height, radius, color);
+        }
     }
 }

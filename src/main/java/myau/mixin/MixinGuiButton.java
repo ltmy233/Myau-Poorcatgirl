@@ -1,6 +1,6 @@
 package myau.mixin;
 
-import myau.util.LiquidGlass;
+import myau.util.FrostedGlass;
 import myau.util.RenderUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
@@ -51,6 +51,19 @@ public abstract class MixinGuiButton {
     @Shadow
     protected abstract void mouseDragged(Minecraft mc, int mouseX, int mouseY);
 
+    private static boolean glassOn() {
+        myau.module.modules.HUD hud = myau.module.modules.HUD.get();
+        return hud == null || hud.glassOn(hud.glassGui);
+    }
+
+    private static boolean glassPanel(float x, float y, float w, float h, float radius, int sw, int sh) {
+        if (!glassOn()) return false;
+        if (Minecraft.getMinecraft().currentScreen != null) {
+            return FrostedGlass.drawFrosted(x, y, w, h, radius, sw, sh, 1.0F);
+        }
+        return FrostedGlass.draw(x, y, w, h, radius, sw, sh, 1.0F);
+    }
+
     @Inject(method = "drawButton", at = @At("HEAD"), cancellable = true)
     private void myauDrawButton(Minecraft mc, int mouseX, int mouseY, CallbackInfo ci) {
         if (!this.visible) {
@@ -93,8 +106,10 @@ public abstract class MixinGuiButton {
                 }
                 text = label != null && !label.isEmpty() ? label : this.displayString;
             }
-            LiquidGlass.draw(this.xPosition, this.yPosition, this.width, this.height, 5.0F,
-                    sr.getScaledWidth(), sr.getScaledHeight());
+            if (!glassPanel(this.xPosition, this.yPosition, this.width, this.height, 5.0F,
+                    sr.getScaledWidth(), sr.getScaledHeight())) {
+                RenderUtil.drawRoundedRect(this.xPosition, this.yPosition, this.width, this.height, 5.0F, 0x4D000000);
+            }
             if (this.hovered) {
                 RenderUtil.drawRoundedRect(this.xPosition, this.yPosition, this.width, this.height, 5.0F, 0x26FFFFFF);
             }
@@ -120,8 +135,10 @@ public abstract class MixinGuiButton {
             ci.cancel();
             return;
         }
-        LiquidGlass.draw(this.xPosition, this.yPosition, this.width, this.height, 5.0F,
-                sr.getScaledWidth(), sr.getScaledHeight());
+        if (!glassPanel(this.xPosition, this.yPosition, this.width, this.height, 5.0F,
+                sr.getScaledWidth(), sr.getScaledHeight())) {
+            RenderUtil.drawRoundedRect(this.xPosition, this.yPosition, this.width, this.height, 5.0F, 0x4D000000);
+        }
         if (this.hovered) {
             RenderUtil.drawRoundedRect(this.xPosition, this.yPosition, this.width, this.height, 5.0F, 0x26FFFFFF);
         }

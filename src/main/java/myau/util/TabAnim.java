@@ -19,6 +19,8 @@ public final class TabAnim {
     private static boolean showing;
     private static boolean settled = true;
     private static long startNs = System.nanoTime();
+    /** HUD 里的 tab-animation 开关关掉时置 false，整套弹簧动画直接定住不动。 */
+    public static boolean enabled = true;
 
     private TabAnim() {
     }
@@ -30,6 +32,12 @@ public final class TabAnim {
             showing = show;
             startNs = now;
             settled = false;
+        }
+        if (!enabled) {
+            scaleY = 1.0F;
+            scaleX = 1.0F;
+            settled = true;
+            return;
         }
         if (settled) {
             return;

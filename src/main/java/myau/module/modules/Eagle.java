@@ -51,7 +51,9 @@ public class Eagle extends Module {
 
     @EventTarget(Priority.LOWEST)
     public void onTick(TickEvent event) {
-        if (this.isEnabled() && event.getType() == EventType.PRE) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (this.isEnabled() && (telly == null || !telly.isAutomationRunning())
+                && event.getType() == EventType.PRE) {
             if (this.sneakDelay > 0) {
                 this.sneakDelay--;
             }
@@ -63,6 +65,8 @@ public class Eagle extends Module {
 
     @EventTarget(Priority.LOWEST)
     public void onMoveInput(MoveInputEvent event) {
+        Telly telly = (Telly) Myau.moduleManager.modules.get(Telly.class);
+        if (telly != null && telly.isAutomationRunning()) return;
         if (this.isEnabled() && mc.currentScreen == null) {
 
             if(sneakOnly.getValue() && Keyboard.isKeyDown(mc.gameSettings.keyBindSneak.getKeyCode()) && shouldSneak()){

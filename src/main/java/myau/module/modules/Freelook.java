@@ -22,11 +22,16 @@ public class Freelook extends Module {
 
     public final IntProperty freelookKey = new IntProperty("freelook-key", 56, -100, 255);
     public final FloatProperty sensitivity = new FloatProperty("sensitivity", 1.0F, 0.1F, 3.0F);
+    public final FloatProperty stretchSpeed = new FloatProperty("stretch-speed", 1.0F, 0.1F, 3.0F);
+    public final FloatProperty distance = new FloatProperty("camera-distance", 4.0F, 1.0F, 8.0F);
+    public final FloatProperty height = new FloatProperty("camera-height", 0.15F, -1.0F, 1.0F);
+    public final FloatProperty lookPitch = new FloatProperty("look-pitch", -45.0F, -90.0F, 90.0F);
     public final ModeProperty mode = new ModeProperty("mode", 0, new String[]{"HOLD", "TOGGLE"});
 
     private boolean prevKeyState;
     private int previousPerspective;
     private float lastFov;
+    private float playerYaw;
 
     public Freelook() {
         super("Freelook", false);
@@ -126,6 +131,9 @@ public class Freelook extends Module {
         if (mc.entityRenderer != null) mc.entityRenderer.loadEntityShader(null);
         if (mc.renderGlobal != null) mc.renderGlobal.setDisplayListEntitiesDirty();
         lastFov = mc.gameSettings.fovSetting;
+        this.playerYaw = mc.thePlayer.rotationYaw;
+        cameraYaw = this.playerYaw;
+        cameraPitch = this.lookPitch.getValue();
     }
 
     public void resetPerspective() {

@@ -31,7 +31,6 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(AimAssist.class));
         combatModules.add(Myau.moduleManager.getModule(AutoClicker.class));
         combatModules.add(Myau.moduleManager.getModule(KillAura.class));
-        combatModules.add(Myau.moduleManager.getModule(KillAuraV2.class));
         combatModules.add(Myau.moduleManager.getModule(Wtap.class));
         combatModules.add(Myau.moduleManager.getModule(Velocity.class));
         combatModules.add(Myau.moduleManager.getModule(Freeze.class));
@@ -44,11 +43,12 @@ public class ClickGui extends GuiScreen {
         combatModules.add(Myau.moduleManager.getModule(MoreKB.class));
         combatModules.add(Myau.moduleManager.getModule(Refill.class));
         combatModules.add(Myau.moduleManager.getModule(HitSelect.class));
-        combatModules.add(Myau.moduleManager.getModule(KBDisplacer.class));
+        combatModules.add(Myau.moduleManager.getModule(HitFlick.class));
 
         List<Module> movementModules = new ArrayList<>();
         movementModules.add(Myau.moduleManager.getModule(AntiAFK.class));
         movementModules.add(Myau.moduleManager.getModule(Fly.class));
+        movementModules.add(Myau.moduleManager.getModule(AirStall.class));
         movementModules.add(Myau.moduleManager.getModule(Speed.class));
         movementModules.add(Myau.moduleManager.getModule(LongJump.class));
         movementModules.add(Myau.moduleManager.getModule(Sprint.class));
@@ -77,6 +77,7 @@ public class ClickGui extends GuiScreen {
         renderModules.add(Myau.moduleManager.getModule(ViewClip.class));
         renderModules.add(Myau.moduleManager.getModule(NoHurtCam.class));
         renderModules.add(Myau.moduleManager.getModule(HUD.class));
+        renderModules.add(Myau.moduleManager.getModule(Fishcake.class));
         renderModules.add(Myau.moduleManager.getModule(GuiModule.class));
         renderModules.add(Myau.moduleManager.getModule(ChestESP.class));
         renderModules.add(Myau.moduleManager.getModule(Trajectories.class));

@@ -77,6 +77,32 @@ public class HUD extends Module {
     public final FloatProperty padding = new FloatProperty("padding", 2.0F, 0.0F, 6.0F);
     public final BooleanProperty smoothList = new BooleanProperty("smooth-list", true);
 
+    // 玻璃总开关 + 每个面板的独立开关，出问题时可以只关某一处，不用重装 jar
+    public final BooleanProperty glass = new BooleanProperty("glass", true);
+    public final BooleanProperty glassGui = new BooleanProperty("glass-gui", true, this.glass::getValue);
+    public final BooleanProperty glassChat = new BooleanProperty("glass-chat", true, this.glass::getValue);
+    public final BooleanProperty glassTab = new BooleanProperty("glass-tab", true, this.glass::getValue);
+    public final BooleanProperty glassScoreboard = new BooleanProperty("glass-scoreboard", true, this.glass::getValue);
+    public final BooleanProperty glassList = new BooleanProperty("glass-list", true, this.glass::getValue);
+    public final BooleanProperty glassNotify = new BooleanProperty("glass-notify", true, this.glass::getValue);
+    public final BooleanProperty glassTarget = new BooleanProperty("glass-target", true, this.glass::getValue);
+    public final BooleanProperty tabAnimation = new BooleanProperty("tab-animation", true);
+    public final FloatProperty glowSize = new FloatProperty("glow-size", 1.45F, 0.5F, 3.0F);
+    public final PercentProperty glowOpacity = new PercentProperty("glow-opacity", 100);
+    public final PercentProperty glowBlur = new PercentProperty("glow-blur", 100);
+
+    public boolean glassOn(BooleanProperty surface) {
+        return this.glass.getValue() && surface.getValue();
+    }
+
+    /** 玻璃开关读取入口：manager 还没起来时一律按"开"处理，免得开界面的瞬间没底。 */
+    public static HUD get() {
+        if (Myau.moduleManager == null) {
+            return null;
+        }
+        return (HUD) Myau.moduleManager.getModule(HUD.class);
+    }
+
     private String getModuleName(Module module) {
         String moduleName = module.getName();
         if (this.lowerCase.getValue()) {
@@ -379,7 +405,21 @@ public class HUD extends Module {
             }
         }
         RenderUtil.enableRenderState();
-        if (this.background.getValue() > 0) {
+        // 玻璃开着就整条模块用磨砂底；画不出来再退回原来的半透明黑底。
+        // background 拉到 0 仍然表示"这块别画底"，老配置的语义不变
+        boolean glassDrawn = false;
+        if (this.background.getValue() > 0 && this.glassOn(this.glassList)) {
+            ScaledResolution sr = new ScaledResolution(mc);
+            float glassW = bgX2 - bgX1;
+            float glassH = bgY2 - bgY1;
+            float glassR = this.rounded.getValue()
+                    ? Math.min(this.cornerRadius.getValue(), Math.min(glassW, glassH) * 0.5F)
+                    : 0.0F;
+            glassDrawn = myau.util.FrostedGlass.draw(bgX1, bgY1, glassW, glassH, glassR,
+                    sr.getScaledWidth(), sr.getScaledHeight(),
+                    Math.max(0.0F, Math.min(1.0F, s)), true);
+        }
+        if (!glassDrawn && this.background.getValue() > 0) {
             int bgColor = new Color(0.0F, 0.0F, 0.0F, this.background.getValue().floatValue() / 100.0F * s).getRGB();
             if (this.rounded.getValue()) {
                 float bgW = bgX2 - bgX1;
@@ -521,11 +561,20 @@ public class HUD extends Module {
         int depth = new Color(0, 0, 0, (int) (28 * alpha)).getRGB();
         float radius = 5.0F;
 
-        RenderUtil.drawRoundedRect(renderX + 1.0F, y + 1.5F, boxWidth, boxHeight, radius + 1.0F,
-                depth, true, true, true, true);
-        RenderUtil.drawRoundedRect(renderX, y, boxWidth, boxHeight, radius, bg, true, true, true, true);
-        RenderUtil.drawRoundedRectOutline(renderX + 0.5F, y + 0.5F, boxWidth - 1.0F, boxHeight - 1.0F,
-                radius, 1.0F, border, true, true, true, true);
+        // 玻璃开着就用磨砂卡片，原来的投影 + 深色底 + 白边一律不再画
+        boolean glassDrawn = false;
+        if (this.glassOn(this.glassNotify)) {
+            ScaledResolution sr = new ScaledResolution(mc);
+            glassDrawn = myau.util.FrostedGlass.draw(renderX, y, boxWidth, boxHeight, radius,
+                    sr.getScaledWidth(), sr.getScaledHeight(), alpha, true);
+        }
+        if (!glassDrawn) {
+            RenderUtil.drawRoundedRect(renderX + 1.0F, y + 1.5F, boxWidth, boxHeight, radius + 1.0F,
+                    depth, true, true, true, true);
+            RenderUtil.drawRoundedRect(renderX, y, boxWidth, boxHeight, radius, bg, true, true, true, true);
+            RenderUtil.drawRoundedRectOutline(renderX + 0.5F, y + 0.5F, boxWidth - 1.0F, boxHeight - 1.0F,
+                    radius, 1.0F, border, true, true, true, true);
+        }
 
         float progress = notificationProgress(entry);
         float progressX = renderX + 6.0F;

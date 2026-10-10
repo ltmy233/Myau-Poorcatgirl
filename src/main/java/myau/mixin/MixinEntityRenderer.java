@@ -47,7 +47,7 @@ public abstract class MixinEntityRenderer {
             at = {@At("HEAD")}
     )
     private void updateCameraAndRender(float float1, long long2, CallbackInfo callbackInfo) {
-        myau.util.LiquidGlass.newFrame();
+        myau.util.FrostedGlass.newFrame();
         if (this.mc.thePlayer != null) {
             Scaffold scaffold = (Scaffold) Myau.moduleManager.modules.get(Scaffold.class);
             if (scaffold.isEnabled() && scaffold.itemSpoof.getValue()) {

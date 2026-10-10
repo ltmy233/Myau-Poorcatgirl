@@ -28,7 +28,7 @@ public class ModeComponent implements Component {
         GL11.glPushMatrix();
         GL11.glScaled(0.5D, 0.5D, 0.5D);
         String mode = this.property.getModeString();
-        mode = mode.replace("_", " ");
+        mode = Lang.t(mode.replace("_", " "));
         String label = Lang.t(this.property.getName()) + ": ";
         int bruhWidth = (int) (Minecraft.getMinecraft().fontRendererObj.getStringWidth(label) * 0.5);
         Minecraft.getMinecraft().fontRendererObj.drawString(label, (float) ((this.parentModule.category.getX() + 4) * 2), (float) ((this.parentModule.category.getY() + this.offsetY + 4) * 2), 0xffffffff, true);
