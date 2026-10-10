@@ -9,7 +9,7 @@ Minecraft 1.8.9 Forge 客户端。
 ./gradlew build
 ```
 
-输出 `build/libs/Myau-cat-v2.1.jar`
+输出 `build/libs/Myau-cat-v2.3.jar`
 
 ## 声明
 
