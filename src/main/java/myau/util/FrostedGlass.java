@@ -17,19 +17,9 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 /**
- * 磨砂玻璃，做法照 rdev/liquid-glass-react 的材质 + Epsilon 的边缘处理：
- * <pre>
- *   backdrop-filter: blur(...) saturate(140%)   → 模糊后的背景本身就是底色，不加深色蒙层
- *   1px 半透明白描边                              → Epsilon 的 hairline outline
- *   一圈主题色柔光（只画在形状外侧、无偏移）        → 代替 box-shadow，不会跟背景错位
- * </pre>
- * 玻璃本体用 MVP 算出屏幕坐标后，切到自己那套正交矩阵里画，
- * 所以聊天栏的 translate+scale、3D 名牌的透视变换下位置都对得上；
- * 柔光和描边留在调用方的变换里画，跟着控件一起走。
- * <p>
- * {@link #draw} 返回 false 表示玻璃没画成，调用方必须走自己的原样式分支——
- * 玻璃永远是锦上添花，不能变成某个控件唯一的底。
- * 任何异常都吞掉返回 false，绝不能漏到渲染循环里去。
+ * 磨砂玻璃：背景模糊 + 1px 白描边 + 外圈柔光（参考 liquid-glass-react / Epsilon）。
+ * 自身用 MVP 投到屏幕坐标再画，聊天栏 translate/scale、3D 名牌透视下位置都对。
+ * 返回 false = 没画成，调用方必须兜原样式；异常一律吞掉，不能漏进渲染循环。
  */
 public final class FrostedGlass {
     private static final IntBuffer VIEWPORT_BUFFER = BufferUtils.createIntBuffer(16);
@@ -102,7 +92,7 @@ public final class FrostedGlass {
             "    return sign(c) * vec2(gx, 1.0 - gx);\n" +
             "}\n" +
             "void main() {\n" +
-            // vGui 已经是屏幕 GUI 坐标了（顶点是在我们自己的正交矩阵里画的）
+            // vGui 就是屏幕 GUI 坐标
             "    vec2 p = vGui;\n" +
             "    vec2 hs = (uRect.zw - uRect.xy) * 0.5;\n" +
             "    vec2 c = p - (uRect.xy + hs);\n" +
@@ -117,15 +107,14 @@ public final class FrostedGlass {
             "    float dR = hs.x - c.x;\n" +
             "    if (sd >= aa) discard;\n" +
             "    float edge = clamp(0.5 - sd / aa, 0.0, 1.0);\n" +
-            // 分段拼起来的面板：本段的上/下边是跟邻居拼的，那条边不能做 AA 渐隐，
-            // 否则接缝两侧各剩半透明，叠出来就是一行一条缝
+            // 拼缝边不做 AA，否则接缝处叠出半透明缝
             "    if (uClipTop < 0.5 && dT < aa && dT <= dL && dT <= dR) edge = 1.0;\n" +
             "    if (uClipBot < 0.5 && dB < aa && dB <= dL && dB <= dR) edge = 1.0;\n" +
             "    vec2 grad = gdRound(c, hs, rS);\n" +
             "    vec2 uv = vec2(p.x * uMap.x, 1.0 - p.y * uMap.y);\n" +
-            // 边缘折射：贴边处的采样点沿法线外推，把周围环境卷进边缘
+            // 贴边采样点沿法线外推做边缘折射
             "    float band = clamp(min(hs.x, hs.y) * 0.35, 1.0, 10.0);\n" +
-            // 分段拼起来的面板：内侧那条横向接缝上不能留折射带和 inset 明暗带
+            // 拼缝处不画折射带和 inset 明暗带
             "    float supNear = 1.0;\n" +
             "    float supBevel = 1.0;\n" +
             "    if (uClipTop < 0.5) {\n" +
@@ -142,23 +131,23 @@ public final class FrostedGlass {
             "    vec3 bg = texture2D(uContent, uv).rgb;\n" +
             "    float lum = dot(bg, vec3(0.2126, 0.7152, 0.0722));\n" +
             "    if (uMode < 0.5) {\n" +
-            // backdrop-filter: saturate(140%)，没有蒙层、没有压暗，底色就是背景自己的颜色
+            // saturate(140%)，不加蒙层，底色就是背景本身
             "        vec3 col = mix(vec3(lum), bg, uSat);\n" +
             "        col = mix(col, vec3(1.0), uTint);\n" +
-            // inset 0 1px 3px rgba(255,255,255,.25) 与 inset 0 1px 4px rgba(0,0,0,.35)
+            // 顶部内亮、底部内暗
             "        float bt = clamp(1.0 + min(sdFx, 0.0) / max(uBevelH, 0.5), 0.0, 1.0) * supBevel;\n" +
             "        col += vec3(1.0) * uHiA * max(0.0, -grad.y) * bt;\n" +
             "        col *= 1.0 - uShA * max(0.0, grad.y) * bt;\n" +
             "        gl_FragColor = vec4(clamp(col, 0.0, 1.0), edge * uAlpha);\n" +
             "    } else {\n" +
-            // 135° 渐变边环：0% → 0，33% → 0.12，66% → 0.40，100% → 0
+            // 135° 渐变边环
             "        float span = max((uRect.z - uRect.x) + (uRect.w - uRect.y), 0.0001);\n" +
             "        float t = clamp(((p.x - uRect.x) + (p.y - uRect.y)) / span, 0.0, 1.0);\n" +
             "        float sweep = t < 0.33 ? (t / 0.33) * 0.12\n" +
             "                    : t < 0.66 ? 0.12 + ((t - 0.33) / 0.33) * 0.28\n" +
             "                    : 0.40 * (1.0 - (t - 0.66) / 0.34);\n" +
             "        float line = clamp(1.0 - abs(sd) / max(uLineW, 0.1), 0.0, 1.0);\n" +
-            // 高光会跟着底下的亮度走
+            // 高光随背景亮度
             "        float ring = (0.40 + sweep * 1.10) * mix(0.8, 1.35, clamp(lum, 0.0, 1.0));\n" +
             "        float a = clamp(line * ring * uRimA * edge, 0.0, 1.0) * uAlpha;\n" +
             "        gl_FragColor = vec4(1.0, 1.0, 1.0, a);\n" +
@@ -206,7 +195,7 @@ public final class FrostedGlass {
             "    gl_FragColor = vec4(1.0, 1.0, 1.0, outA);\n" +
             "}\n";
 
-    // Epsilon 那种实底：一块半透明深灰圆角矩形，不采样背景、不做磨砂
+    // 实底：半透明深灰圆角矩形，不采样背景
     private static final String FLAT_FRAG =
             "#version 120\n" +
             "uniform vec4 uRect;\n" +
@@ -283,10 +272,10 @@ public final class FrostedGlass {
     private static int scissorPrevY;
     private static int scissorPrevW;
     private static int scissorPrevH;
-    // LWJGL 的 glGetInteger(int, IntBuffer) 一律要求至少 16 个元素，给 4 个会直接抛异常
+    // glGetInteger 的 buffer 至少要 16 个元素
     private static final IntBuffer SCISSOR_BUFFER = BufferUtils.createIntBuffer(16);
 
-    // 游戏内白光相对主界面磨砂卡的放大倍数：柔光外扩距离和亮度都跟着它走
+    // 游戏内柔光放大倍数
     private static final float IN_GAME_GLOW_SCALE = 1.0F;
 
     private static float gameGlowScale() {
@@ -334,11 +323,9 @@ public final class FrostedGlass {
     }
 
     /**
-     * 画一块玻璃。返回 true 表示玻璃已经画好；false 表示这次没画成，
-     * 调用方必须接着画自己的原样式底，否则控件会没有背景。
+     * 画一块玻璃。返回 false 时调用方必须兜原样式底，否则控件没背景。
      *
-     * @param edge false 时只铺磨砂底、不画描边和柔光。给"一整块面板由几段矩形拼起来"
-     *             的场景用（Tab 的 header/rows/footer），拼缝处不能各来一道白线。
+     * @param edge false 只铺磨砂底、不画描边柔光，给分段拼接的面板用
      */
     public static boolean draw(float x, float y, float w, float h, float radius,
                                int scaledWidth, int scaledHeight, float alpha, boolean edge) {
@@ -346,13 +333,11 @@ public final class FrostedGlass {
     }
 
     /**
-     * 画一块玻璃。返回 true 表示玻璃已经画好；false 表示这次没画成，
-     * 调用方必须接着画自己的原样式底，否则控件会没有背景。
+     * 同上，上/下圆角分开传。
      *
-     * @param radiusTop    上两角的圆角半径，0 = 方角
-     * @param radiusBottom 下两角的圆角半径，0 = 方角
-     * @param edge false 时只铺磨砂底、不画描边和柔光。给"一整块面板由几段矩形拼起来"
-     *             的场景用（Tab 的 header/rows/footer），拼缝处不能各来一道白线。
+     * @param radiusTop    上两角半径
+     * @param radiusBottom 下两角半径
+     * @param edge false 只铺磨砂底、不画描边柔光，给分段拼接的面板用
      */
     public static boolean draw(float x, float y, float w, float h,
                                float radiusTop, float radiusBottom,
@@ -362,11 +347,7 @@ public final class FrostedGlass {
     }
 
     /**
-     * 同上，额外指定上下两条边是不是整块面板的外边界。
-     *
-     * @param edgeTop    true = 本段上边就是面板外边界；false = 上面还压着别的段，
-     *                   接缝处要把折射带和 inset 明暗带压掉，否则一行一条亮线
-     * @param edgeBottom 同上，指下边
+     * 同上，额外指定上下边是不是面板外边界（false = 拼缝，压掉折射/明暗带）。
      */
     public static boolean draw(float x, float y, float w, float h,
                                float radiusTop, float radiusBottom,
@@ -376,9 +357,7 @@ public final class FrostedGlass {
                 scaledWidth, scaledHeight, alpha, edge, false);
     }
 
-    /**
-     * 磨砂玻璃版，只给主界面那几张卡用；游戏内一律走 {@link #draw} 的实底样式。
-     */
+    /** 磨砂玻璃版，只给主界面卡片用；游戏内走 {@link #draw} 实底。 */
     public static boolean drawFrosted(float x, float y, float w, float h, float radius,
                                       int scaledWidth, int scaledHeight, float alpha) {
         if (alpha <= 0.0F || w < 4.0F || h < 4.0F || scaledWidth <= 0 || scaledHeight <= 0) return false;
@@ -413,8 +392,7 @@ public final class FrostedGlass {
         int dispH = mc.displayHeight;
         if (dispW <= 0 || dispH <= 0) return false;
 
-        // 进门先记状态，出门原样还回去。这一帧里会被调几十次，
-        // 只要漏掉一个 enable 位，后面别的模块就会整片画不出来
+        // 进出成对还原状态，漏一个 enable 位后面的模块就画不出来
         boolean prevDepth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
         boolean prevBlend = GL11.glIsEnabled(GL11.GL_BLEND);
         boolean prevTex = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
@@ -434,7 +412,7 @@ public final class FrostedGlass {
             float sx = dispW / (float) scaledWidth;
             float sy = dispH / (float) scaledHeight;
 
-            // 本地坐标 → 屏幕 GUI 坐标。带 w 除法，所以 3D 名牌那种透视下也算得对
+            // 本地坐标 → 屏幕坐标，带 w 除法，透视下也对
             float[] box = screenBox(readMvp(), x, y, w, h, scaledWidth, scaledHeight);
             if (box == null) return false;
             float minX = box[0];
@@ -443,7 +421,7 @@ public final class FrostedGlass {
             float maxY = box[3];
             if (maxX - minX < 4.0F || maxY - minY < 4.0F) return false;
 
-            // 圆角半径跟着屏幕缩放走；透视下没有均匀缩放，直接夹到半宽半高
+            // 半径换算到屏幕单位，夹到半宽半高
             float ratioX = (maxX - minX) / w;
             float ratioY = (maxY - minY) / h;
             float scaleR = (ratioX + ratioY) * 0.5F;
@@ -456,17 +434,17 @@ public final class FrostedGlass {
             if (rBot > maxR) rBot = maxR;
             float radius = Math.max(radiusTop, radiusBottom);
 
-            // shader 编译不出来就别画了，直接让调用方走原样式
+            // shader 挂了就返回 false 走原样式
             if (frosted || flatBlur) {
                 if (!ensureProgram()) return false;
-                // 抓帧和模糊都得在画玻璃之前，不然玻璃会把自己采进模糊里
+                // 先抓帧和模糊，再画玻璃，否则会采到自己
                 if (!prepareBackground(dispW, dispH, viewportOk)) return false;
             } else if (!ensureFlatProgram()) {
                 return false;
             }
             boolean blurred = down3 != null && frameBlurred;
 
-            // 阴影已经删掉，改成贴着形状的一圈白色柔光
+            // 贴形状的外圈柔光
             if (edge) drawGlow(x, y, w, h, radius, alpha, frosted ? 1.0F : gameGlowScale());
 
             if (frosted || flatBlur) {
@@ -481,7 +459,7 @@ public final class FrostedGlass {
             }
             return drawFlat(box, rTop, rBot, scaledWidth, scaledHeight, sx, alpha);
         } catch (Throwable t) {
-            // 渲染循环里绝不能往外抛，出问题就当这次没画成
+            // 渲染里不能抛，失败当没画成
             logFailure(t);
             return false;
         } finally {
@@ -496,8 +474,7 @@ public final class FrostedGlass {
     }
 
     /**
-     * 只补一圈柔光，不画面板底。给"分几段画完再统一收边"的面板用，
-     * 必须在所有分段都画完之后调一次。
+     * 只补外圈柔光，不画底。分段面板在所有段画完后调一次。
      */
     public static void drawEdge(float x, float y, float w, float h, float radius, float alpha) {
         if (alpha <= 0.0F || w < 4.0F || h < 4.0F) return;
@@ -514,9 +491,7 @@ public final class FrostedGlass {
     }
 
     /**
-     * 把之后的绘制裁进指定矩形（矩形用调用方的坐标，和 {@link #draw} 一样会过 MVP 投到屏幕）。
-     * 聊天栏的平滑滚动是整体平移内容的，不裁就会有一行字甩到框外面去。
-     * 装不上就返回 false，调用方照常画，不会因为裁剪失败丢内容。
+     * 把后续绘制裁进矩形（坐标同 {@link #draw}，会过 MVP 投到屏幕）。装不上返回 false。
      */
     public static boolean enableScissor(float x, float y, float w, float h,
                                         int scaledWidth, int scaledHeight) {
@@ -635,8 +610,7 @@ public final class FrostedGlass {
         frameTexH = h;
     }
 
-    // 整帧降采样一帧只算一次，同一帧里所有玻璃共用。降采样到 1/4 后再做分离式高斯，
-    // 之前只靠双线性放大硬插值，背景会糊成一块一块的方格
+    // 整帧模糊一帧只算一次，所有玻璃共用；降采样到 1/4 再做分离式高斯
     private static boolean blurWholeFrame(int dispW, int dispH) {
         if (frameBlurred && down1 != null) return true;
         if (!ensureScreenDowns(dispW, dispH)) return false;
@@ -844,9 +818,8 @@ public final class FrostedGlass {
 
     // ---------------------------------------------------------------- 柔光 / 描边
 
-    // 外侧白色柔光：Epsilon 的做法，形状 SDF 外扩一圈，按"落在形状里的采样点占比"做软发光。
-    // 只在形状外侧出光，内部一点不掺；半径跟着面板尺寸走，小控件不会糊出一大圈。
-    // scale 是柔光的放大倍数：游戏内那套实底面板要一圈明显更大的白光，主界面磨砂卡维持原样。
+    // 外圈柔光：SDF 外扩，按形状内采样点占比发光，只在形状外侧。
+    // scale 是放大倍数：游戏内实底面板用更大的光，主界面磨砂卡保持原样。
     private static void drawGlow(float x, float y, float w, float h, float radius, float alpha, float scale) {
         if (alpha <= 0.0F) return;
         Minecraft mc = Minecraft.getMinecraft();
@@ -866,7 +839,7 @@ public final class FrostedGlass {
             drawGlowLegacy(x, y, w, h, radius, alpha);
             return;
         }
-        // 传进来的半径是调用方的本地单位，名牌那种缩放过的控件要先折算成屏幕单位
+        // 半径是本地单位，先折算成屏幕单位
         float scaleR = ((bw / w) + (bh / h)) * 0.5F;
         if (!(scale > 1.0F)) scale = 1.0F;
         float r = Math.max(0.0F, Math.min(radius * scaleR, Math.min(bw, bh) * 0.5F));
@@ -1084,7 +1057,7 @@ public final class FrostedGlass {
         }
     }
 
-    // Epsilon 那种 1px hairline，画在玻璃上面，把边缘收干净
+    // 1px 描边，画在玻璃上收边
     private static void drawOutline(float x, float y, float w, float h, float radius, float alpha) {
         if (alpha <= 0.0F) return;
         int a = Math.round(90.0F * alpha);
@@ -1099,7 +1072,7 @@ public final class FrostedGlass {
         );
     }
 
-    // shader 挂掉时的兜底：一圈贴边高光，顶亮底暗
+    // shader 挂掉的兜底：贴边高光，顶亮底暗
     public static void drawRim(float x, float y, float w, float h, float radius) {
         float r = Math.min(radius, Math.min(w, h) * 0.5F);
         if (r < 1.0F || w <= 4.0F || h <= 4.0F) return;
@@ -1151,8 +1124,7 @@ public final class FrostedGlass {
         boolean mvPushed = false;
         boolean projPushed = false;
         try {
-            // 切到自己那套 GUI 正交矩阵：x/y 已经是屏幕 GUI 坐标，
-            // 这样片元里的 p = vGui 就直接能和 uRect、背景采样对上
+            // 切到 GUI 正交矩阵，片元里 p = vGui 直接对上 uRect 和背景采样
             GL11.glMatrixMode(GL11.GL_PROJECTION);
             GL11.glPushMatrix();
             projPushed = true;
@@ -1180,21 +1152,21 @@ public final class FrostedGlass {
             GL20.glUniform1f(uRadius, Math.min(Math.max(radiusTop, radiusBottom), minD * 0.5F));
             GL20.glUniform1f(uRadiusTop, Math.min(radiusTop, minD * 0.5F));
             GL20.glUniform1f(uRadiusBottom, Math.min(radiusBottom, minD * 0.5F));
-            // 这条边是不是面板的外边界：内侧接缝上要把折射带和 inset 明暗带压掉
+            // 是外边界才画折射/明暗带，拼缝处压掉
             GL20.glUniform1f(uClipTop, edgeTop ? 1.0F : 0.0F);
             GL20.glUniform1f(uClipBot, edgeBottom ? 1.0F : 0.0F);
             GL20.glUniform1f(uAA, aa);
             // backdrop-filter: saturate(140%)
             GL20.glUniform1f(uSat, flatBlur ? 1.0F : 1.40F);
             GL20.glUniform1f(uTint, flatBlur ? 0.0F : 0.52F);
-            // inset 那两道的深度按元素尺寸走，69 高的卡配 3px，小件同比缩
+            // inset 深度按元素尺寸同比缩放
             GL20.glUniform1f(uBevelH, Math.max(1.0F, Math.min(4.0F, minD * 0.05F)));
             GL20.glUniform1f(uHiA, flatBlur ? 0.0F : 0.25F);
             GL20.glUniform1f(uShA, flatBlur ? 0.0F : 0.35F);
-            // 边环总宽 ≈ 1.5 个设备像素那一圈
+            // 边环宽 ≈ 1.5 设备像素
             GL20.glUniform1f(uLineW, 1.5F * aa);
             GL20.glUniform1f(uRimA, 1.0F);
-            // 边缘折射量（uv 单位），0.0025 ≈ 1080p 上 5px
+            // 边缘折射量（uv 单位）
             GL20.glUniform1f(uDisp, flatBlur ? 0.0F : 0.0017F);
 
             GL11.glEnable(GL11.GL_TEXTURE_2D);
@@ -1209,8 +1181,7 @@ public final class FrostedGlass {
             GL20.glUniform1f(uMode, 0.0F);
             quad(x, y, w, h);
 
-            // 边环加色，等价参考里 screen/overlay 那两层。
-            // 分段模式不画：白线由整块面板收边时的 drawOutline 统一画一次
+            // 边环加色；分段模式交给 drawOutline 统一画
             if (edge) {
                 GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ONE);
                 GL20.glUniform1f(uMode, 1.0F);
@@ -1265,7 +1236,7 @@ public final class FrostedGlass {
         return MVP;
     }
 
-    // 本地矩形的四个角过 MVP → NDC → 屏幕 GUI 坐标，取轴对齐包围盒
+    // 四角过 MVP → NDC → 屏幕坐标，取包围盒
     private static float[] screenBox(float[] m, float x, float y, float w, float h,
                                      int scaledW, int scaledH) {
         float minX = Float.MAX_VALUE;
@@ -1276,8 +1247,7 @@ public final class FrostedGlass {
             float px = (i == 0 || i == 3) ? x : x + w;
             float py = (i < 2) ? y : y + h;
             float cw = m[3] * px + m[7] * py + m[15];
-            // w<=0 说明这个角在相机背后（名牌容差把身后 10 格的实体也放进来了），
-            // 这时候除法会把它翻到屏幕另一侧去，画出来就是无人处凭空冒的一块板
+            // w<=0 = 角在相机背后，除法会翻到屏幕另一侧，直接放弃
             if (!(cw > 1.0E-6F)) return null;
             float ndcX = (m[0] * px + m[4] * py + m[12]) / cw;
             float ndcY = (m[1] * px + m[5] * py + m[13]) / cw;
@@ -1292,7 +1262,7 @@ public final class FrostedGlass {
                 || !Float.isFinite(maxX) || !Float.isFinite(maxY)) return null;
         if (maxX < 0.0F || minX > (float) scaledW
                 || maxY < 0.0F || minY > (float) scaledH) return null;
-        // 紧贴近平面的角会把包围盒撑到天上，画出来就是一整屏的糊
+        // 贴近平面时包围盒会爆炸，直接放弃
         if (maxX - minX > (float) scaledW * 8.0F || maxY - minY > (float) scaledH * 8.0F) return null;
         return new float[]{minX, minY, maxX, maxY};
     }

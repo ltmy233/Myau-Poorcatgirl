@@ -4,7 +4,7 @@ import myau.event.events.Cancellable;
 import myau.event.events.Event;
 
 /**
- * {@link Cancellable} 的一个抽象实现，能取消的事件直接继承它就省事了。
+ * {@link Cancellable} 的抽象实现，可取消的事件继承它即可。
  *
  * @author DarkMagician6
  * @since August 27, 2013

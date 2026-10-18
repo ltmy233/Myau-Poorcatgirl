@@ -134,6 +134,7 @@ public class Myau {
         moduleManager.modules.put(Refill.class, new Refill());
         moduleManager.modules.put(SafeWalk.class, new SafeWalk());
         moduleManager.modules.put(Scaffold.class, new Scaffold());
+        moduleManager.modules.put(GodBridge.class, new GodBridge());
         moduleManager.modules.put(Telly.class, new Telly());
         moduleManager.modules.put(AutoBlockIn.class, new AutoBlockIn());
         moduleManager.modules.put(Spammer.class, new Spammer());

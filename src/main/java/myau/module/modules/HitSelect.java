@@ -103,23 +103,23 @@ public class HitSelect extends Module {
     }
 
     private boolean prioritizeSecondHit(EntityLivingBase player, EntityLivingBase target) {
-        // 对方已经在硬直了，这一下让它打出去
+        // 对方硬直中，放行
         if (target.hurtTime != 0) {
             return true;
         }
 
-        // 自己还没从受击硬直里缓过来，也放行
+        // 自己还在受击硬直，放行
         if (player.hurtTime <= player.maxHurtTime - 1) {
             return true;
         }
 
-        // 贴得太近了，别拦
+        // 距离太近不拦
         double dist = player.getDistanceToEntity(target);
         if (dist < 2.5) {
             return true;
         }
 
-        // 双方都不是朝着对方走的，说明这下不算，放行
+        // 对方没朝我走，放行
         if (!this.isMovingTowards(target, player, 60.0)) {
             return true;
         }
@@ -128,49 +128,49 @@ public class HitSelect extends Module {
             return true;
         }
 
-        // 该拦了，顺手把位移修正回去
+        // 拦下并修正位移
         this.fixMotion();
         return false;
     }
 
     private boolean prioritizeCriticalHits(EntityLivingBase player) {
-        // 脚踩在地上，出不了暴击，放行
+        // 在地上没有暴击，放行
         if (player.onGround) {
             return true;
         }
 
-        // 正在受击硬直中，放行
+        // 受击硬直中，放行
         if (player.hurtTime != 0) {
             return true;
         }
 
-        // 正在下落，这是暴击的条件，放行
+        // 下落中，满足暴击条件，放行
         if (player.fallDistance > 0.0f) {
             return true;
         }
 
-        // 既不在下落也没硬直，拦下来并修正位移
+        // 其余情况拦下并修正位移
         this.fixMotion();
         return false;
     }
 
     private boolean prioritizeWTapHits(EntityLivingBase player, boolean sprinting) {
-        // 撞在墙上了，位移本来就出不去，放行
+        // 撞墙位移出不去，放行
         if (player.isCollidedHorizontally) {
             return true;
         }
 
-        // 前进键没按着，放行
+        // 没按前进，放行
         if (!mc.gameSettings.keyBindForward.isKeyDown()) {
             return true;
         }
 
-        // 已经在疾跑了，这下不归我管，放行
+        // 正在疾跑，放行
         if (sprinting) {
             return true;
         }
 
-        // 拦下来，顺便把位移修正回去
+        // 拦下并修正位移
         this.fixMotion();
         return false;
     }
@@ -186,10 +186,10 @@ public class HitSelect extends Module {
         }
 
         try {
-            // 先把当前的减速值记下来，等会儿要还原
+            // 记下原减速值，稍后还原
             this.savedSlowdown = keepSprint.slowdown.getValue().doubleValue();
             
-            // 开启 KeepSprint 并把减速归零，这样被拦下也不会掉速
+            // 打开 KeepSprint 并把减速归零，被拦下也不掉速
             if (!keepSprint.isEnabled()) {
                 keepSprint.toggle();
             }
@@ -212,10 +212,10 @@ public class HitSelect extends Module {
         }
 
         try {
-            // 把减速值放回原来的
+            // 还原减速值
             keepSprint.slowdown.setValue((int) this.savedSlowdown);
             
-            // 要是我们刚才顺手打开的 KeepSprint，现在关掉
+            // 刚才顺手开的就关掉
             if (keepSprint.isEnabled()) {
                 keepSprint.toggle();
             }
@@ -232,26 +232,26 @@ public class HitSelect extends Module {
         Vec3 lastPos = new Vec3(source.lastTickPosX, source.lastTickPosY, source.lastTickPosZ);
         Vec3 targetPos = target.getPositionVector();
 
-        // 用这一帧和上一帧的位置差，算出实际走的方向
+        // 位置差 = 实际走的方向
         double mx = currentPos.xCoord - lastPos.xCoord;
         double mz = currentPos.zCoord - lastPos.zCoord;
         double movementLength = Math.sqrt(mx * mx + mz * mz);
 
-        // 一动没动，谈不上朝哪走
+        // 没动，方向无意义
         if (movementLength == 0.0) {
             return false;
         }
 
-        // 归一化，后面只看方向不看快慢
+        // 归一化，只看方向
         mx /= movementLength;
         mz /= movementLength;
 
-        // 从自己指向对方的那个向量
+        // 指向对方的向量
         double tx = targetPos.xCoord - currentPos.xCoord;
         double tz = targetPos.zCoord - currentPos.zCoord;
         double targetLength = Math.sqrt(tx * tx + tz * tz);
 
-        // 就站在同一个点上，没有夹角可算
+        // 同点，没有夹角
         if (targetLength == 0.0) {
             return false;
         }
@@ -259,10 +259,10 @@ public class HitSelect extends Module {
         tx /= targetLength;
         tz /= targetLength;
 
-        // 点乘就是两个方向夹角的余弦
+        // 点乘 = 夹角余弦
         double dotProduct = mx * tx + mz * tz;
 
-        // 夹角没超过阈值，就算朝着对方走
+        // 夹角在阈值内算朝对方走
         return dotProduct >= Math.cos(Math.toRadians(maxAngle));
     }
 

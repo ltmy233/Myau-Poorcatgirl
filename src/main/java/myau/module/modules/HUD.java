@@ -76,8 +76,12 @@ public class HUD extends Module {
     public final FloatProperty cornerRadius = new FloatProperty("corner-radius", 4.0F, 1.0F, 8.0F, () -> rounded.getValue());
     public final FloatProperty padding = new FloatProperty("padding", 2.0F, 0.0F, 6.0F);
     public final BooleanProperty smoothList = new BooleanProperty("smooth-list", true);
+    public final FloatProperty scoreboardScale = new FloatProperty("scoreboard-scale", 1.0F, 0.5F, 2.0F);
+    public final IntProperty scoreboardRows = new IntProperty("scoreboard-rows", 15, 5, 15);
+    public final IntProperty scoreboardOffsetX = new IntProperty("scoreboard-offset-x", 0, -160, 160);
+    public final IntProperty scoreboardOffsetY = new IntProperty("scoreboard-offset-y", 0, -80, 80);
 
-    // 玻璃总开关 + 每个面板的独立开关，出问题时可以只关某一处，不用重装 jar
+    // 玻璃总开关 + 各面板独立开关
     public final BooleanProperty glass = new BooleanProperty("glass", true);
     public final BooleanProperty glassGui = new BooleanProperty("glass-gui", true, this.glass::getValue);
     public final BooleanProperty glassChat = new BooleanProperty("glass-chat", true, this.glass::getValue);
@@ -95,7 +99,7 @@ public class HUD extends Module {
         return this.glass.getValue() && surface.getValue();
     }
 
-    /** 玻璃开关读取入口：manager 还没起来时一律按"开"处理，免得开界面的瞬间没底。 */
+    /** 取 HUD 实例；manager 没起来时返回 null。 */
     public static HUD get() {
         if (Myau.moduleManager == null) {
             return null;
@@ -405,8 +409,7 @@ public class HUD extends Module {
             }
         }
         RenderUtil.enableRenderState();
-        // 玻璃开着就整条模块用磨砂底；画不出来再退回原来的半透明黑底。
-        // background 拉到 0 仍然表示"这块别画底"，老配置的语义不变
+        // 玻璃开着用磨砂底，画不出来退回半透明黑底；background=0 仍然表示不画底
         boolean glassDrawn = false;
         if (this.background.getValue() > 0 && this.glassOn(this.glassList)) {
             ScaledResolution sr = new ScaledResolution(mc);
@@ -561,7 +564,7 @@ public class HUD extends Module {
         int depth = new Color(0, 0, 0, (int) (28 * alpha)).getRGB();
         float radius = 5.0F;
 
-        // 玻璃开着就用磨砂卡片，原来的投影 + 深色底 + 白边一律不再画
+        // 玻璃开着用磨砂卡，投影/深色底/白边不再画
         boolean glassDrawn = false;
         if (this.glassOn(this.glassNotify)) {
             ScaledResolution sr = new ScaledResolution(mc);

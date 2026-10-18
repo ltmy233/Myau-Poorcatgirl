@@ -77,6 +77,8 @@ public class Config {
                         }
                     }
 
+                    module.readConfig(object);
+
                     if (object.has("key")) {
                         JsonElement key = object.get("key");
                         if (key != null && key.isJsonPrimitive()) {
@@ -127,6 +129,7 @@ public class Config {
                         }
                     }
                 }
+                module.writeConfig(moduleObject);
                 object.add(module.getName(), moduleObject);
             }
 

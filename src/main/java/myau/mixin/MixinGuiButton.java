@@ -74,7 +74,7 @@ public abstract class MixinGuiButton {
         this.hovered = this.enabled && mouseX >= this.xPosition && mouseY >= this.yPosition
                 && mouseX < this.xPosition + this.width && mouseY < this.yPosition + this.height;
         if ((Object) this instanceof GuiOptionSlider || (Object) this instanceof GuiSlider) {
-            // 原版 drawButton 里带着滑块的拖拽更新，取值之前先让它跑一遍。
+            // 原版 drawButton 里带滑块拖拽更新，取值前先跑一遍
             this.mouseDragged(mc, mouseX, mouseY);
             float t;
             String text;

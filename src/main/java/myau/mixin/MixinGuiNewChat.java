@@ -92,6 +92,17 @@ public abstract class MixinGuiNewChat extends Gui {
         return value < min ? min : (value > max ? max : value);
     }
 
+    /** 把后续绘制裁进矩形（chat 坐标），滚动时文字不会甩出面板。 */
+    private void betterChatBeginClip(float x, float y, float w, float h) {
+        BetterChat mod = this.betterChat();
+        if (mod == null || !mod.isEnabled()) {
+            return;
+        }
+        ScaledResolution scaled = new ScaledResolution(this.mc);
+        myau.util.FrostedGlass.enableScissor(x, y, w, h,
+                scaled.getScaledWidth(), scaled.getScaledHeight());
+    }
+
     @Inject(method = "drawChat", at = @At("HEAD"))
     private void betterChatUpdateAnim(CallbackInfo ci) {
         long current = System.currentTimeMillis();
@@ -124,7 +135,9 @@ public abstract class MixinGuiNewChat extends Gui {
         if (Math.abs(this.scrollPos - this.betterChatScrollPosition) < 0.01F) {
             this.betterChatScrollPosition = this.scrollPos;
         }
-        this.betterChatScrollOffset = (this.betterChatScrollPosition - this.scrollPos) * 9.0F;
+        // 起点取 floor + 小数×9 平移，和绘制窗口同套换算，滚动不跳
+        float floorPosition = (float) Math.floor(this.betterChatScrollPosition);
+        this.betterChatScrollOffset = (this.betterChatScrollPosition - floorPosition) * 9.0F;
         if (this.betterChatPercent < 1.0F) {
             this.betterChatPercent += 0.0035F * this.betterChatFrameDeltaMs;
         }
@@ -177,10 +190,8 @@ public abstract class MixinGuiNewChat extends Gui {
         if (contentOffset == 0.0F) {
             return;
         }
-        float scale = this.getChatScale();
-        GlStateManager.translate(0.0F, scale == 0.0F
-                ? contentOffset
-                : contentOffset / scale, 0.0F);
+        // drawChat 已 scale(chatScale)，9px/行是聊天空间坐标，直接平移；除 chatScale 会跳半格
+        GlStateManager.translate(0.0F, contentOffset, 0.0F);
     }
 
     private void betterChatCancelScroll() {
@@ -188,10 +199,7 @@ public abstract class MixinGuiNewChat extends Gui {
         if (contentOffset == 0.0F) {
             return;
         }
-        float scale = this.getChatScale();
-        GlStateManager.translate(0.0F, scale == 0.0F
-                ? -contentOffset
-                : -contentOffset / scale, 0.0F);
+        GlStateManager.translate(0.0F, -contentOffset, 0.0F);
     }
 
     @Redirect(
@@ -248,7 +256,8 @@ public abstract class MixinGuiNewChat extends Gui {
                 strongestAlpha = Math.max(strongestAlpha, alpha);
                 visibleLines++;
             }
-            if (lineLimit > 0 && strongestAlpha > 3) {
+            boolean panelVisible = lineLimit > 0 && strongestAlpha > 3;
+            if (panelVisible) {
                 float opacity = this.mc.gameSettings.chatOpacity * 0.9F + 0.1F;
                 int alpha = (int) ((float) strongestAlpha * opacity * 0.5F);
                 int color = Math.max(0, Math.min(255, alpha)) << 24;
@@ -276,6 +285,12 @@ public abstract class MixinGuiNewChat extends Gui {
             this.betterChatPanelTop = Integer.MAX_VALUE;
             this.betterChatPanelBottom = Integer.MIN_VALUE;
             this.betterChatPanelRight = 0;
+            // 文字整体平移，先裁进面板/行数窗口，免得行甩出去
+            float clipH = panelVisible
+                    ? Math.max(9.0F, this.betterChatPanelHeight)
+                    : (float) Math.max(1, lineLimit) * 9.0F;
+            this.betterChatBeginClip(0.0F, -clipH,
+                    this.getChatWidth() / this.getChatScale() + 4.0F, clipH);
                 betterChatApplyScroll();
                 return;
             }
@@ -316,7 +331,7 @@ public abstract class MixinGuiNewChat extends Gui {
                 targetTop = targetBottom - BETTER_CHAT_MAX_PANEL_HEIGHT;
             }
 
-            // 新消息一来，文字动画会从头开始跳，这时候面板尺寸不能跟着上一帧走，直接对齐目标。
+            // 新消息动画重放时面板直接对齐目标，不跟上一帧
             boolean snap = mod == null || !mod.smooth.getValue() || this.betterChatPercent < 1.0F;
             if (snap) {
                 this.betterChatDrawLeft = targetLeft;
@@ -380,6 +395,10 @@ public abstract class MixinGuiNewChat extends Gui {
         this.betterChatPanelTop = Integer.MAX_VALUE;
         this.betterChatPanelBottom = Integer.MIN_VALUE;
         this.betterChatPanelRight = 0;
+        // 没面板时裁到行数窗口
+        float windowH = (float) Math.max(1, this.getLineCount()) * 9.0F;
+        this.betterChatBeginClip(0.0F, -windowH,
+                this.getChatWidth() / this.getChatScale() + 4.0F, windowH);
         betterChatApplyScroll();
     }
 
@@ -389,8 +408,26 @@ public abstract class MixinGuiNewChat extends Gui {
             index = 0
     )
     private int betterChatLineIndex(int line) {
-        this.betterChatLineBeingDrawn = line;
-        return line;
+        BetterChat mod = this.betterChat();
+        if (mod == null || !mod.isEnabled() || !mod.smooth.getValue() || this.drawnChatLines == null) {
+            this.betterChatLineBeingDrawn = line;
+            return line;
+        }
+        int size = this.drawnChatLines.size();
+        if (size <= 0) {
+            this.betterChatLineBeingDrawn = line;
+            return line;
+        }
+        int shift = this.scrollPos - (int) Math.floor(this.betterChatScrollPosition);
+        int slot = line - shift;
+        if (slot >= size) {
+            slot = size - 1;
+        }
+        if (slot < 0) {
+            slot = 0;
+        }
+        this.betterChatLineBeingDrawn = slot;
+        return slot;
     }
 
     @ModifyArg(

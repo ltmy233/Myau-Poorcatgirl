@@ -72,7 +72,7 @@ public final class Lang {
         put("MoreKB", "更多击退");
         put("Refill", "自动补充");
         put("HitSelect", "点击选择");
-        put("HitFlick", "击退方向");
+        put("HitFlick", "甩击");
         put("AntiAFK", "反挂机");
         put("Fly", "飞行");
         put("AirStall", "卡空");
@@ -103,7 +103,7 @@ public final class Lang {
         put("NoHurtCam", "无受伤镜头");
         put("HUD", "HUD");
         put("Fishcake", "鱼饼");
-        put("ClickGui", "点击介面");
+        put("ClickGui", "点击界面");
         put("ChestESP", "箱子ESP");
         put("Trajectories", "轨迹预测");
         put("Radar", "雷达");
@@ -111,7 +111,7 @@ public final class Lang {
         put("TeamHealthDisplay", "队伍血量显示");
         put("弹幕", "弹幕");
 
-        put("AutoHeal", "自动自疗");
+        put("AutoHeal", "自动治疗");
         put("AutoTool", "自动工具");
         put("ChestStealer", "箱子偷取");
         put("InvManager", "背包管理");
@@ -122,8 +122,8 @@ public final class Lang {
         put("FastPlace", "快速放置");
         put("GhostHand", "幽灵手");
         put("MCF", "中键好友");
-        put("AntiDebuff", "防止坏药水");
-        put("Spammer", "垃圾邮件发送者");
+        put("AntiDebuff", "防负面药水");
+        put("Spammer", "刷屏器");
         put("BedNuker", "自动挖床");
         put("BedTracker", "床追踪");
         put("LightningTracker", "闪电追踪器");
@@ -159,7 +159,7 @@ public final class Lang {
         put("auto-swap", "自动切换");
         put("avatar", "头像");
         put("background", "背景");
-        put("bar", "进度条");
+        put("bar", "色条");
         put("better-bob-view", "优化视角摇晃");
         put("blazes", "烈焰人");
         put("blindness", "失明");
@@ -186,7 +186,7 @@ public final class Lang {
         put("check-durability", "检查耐久");
         put("chests", "箱子");
         put("clear", "透明背景");
-        put("click-gui", "点击介面");
+        put("click-gui", "点击界面");
         put("coal", "煤");
         put("coal-tracers", "煤追踪线");
         put("creepers", "苦力怕");
@@ -655,6 +655,9 @@ public final class Lang {
         put("edit-position", "编辑位置");
         put("exclude-permanent", "排除永久效果");
         put("draw-background", "绘制背景");
+        put("background-blur", "背景模糊");
+        put("snap-edges", "吸附屏幕边缘");
+        put("edge-line", "贴边线条");
         put("potion-blacklist", "药水黑名单");
         put("rotation-speed", "旋转速度");
         put("tint-color", "染色颜色");
@@ -680,6 +683,16 @@ public final class Lang {
         put("multi-place", "连续放置");
         put("safe-walk", "防跌落");
         put("block-counter", "方块计数");
+        put("God Bridge", "神桥");
+        put("hold-block", "自动持块");
+        put("only-when-sneak", "仅潜行时");
+        put("auto-jump", "自动跳跃");
+        put("disable-guard", "禁用防护");
+        put("show-activation-bounds", "显示激活范围");
+        put("smooth-aim", "平滑瞄准");
+        put("start-delay", "启动延迟");
+        put("activation-delay", "激活延迟");
+        put("lock-rotation", "锁定视角");
 
         put("background-border", "背景边框");
         put("friend-color", "好友颜色");
@@ -701,6 +714,43 @@ public final class Lang {
         put("spawn-fake", "生成假人");
         put("strafe-invert", "侧移反转");
         put("use-blink", "扣包");
+
+        put("camera-distance", "相机距离");
+        put("camera-height", "相机高度");
+        put("look-pitch", "俯视角度");
+        put("sensitivity", "灵敏度");
+        put("stretch-speed", "拉伸速度");
+        put("HOLD", "按住");
+        put("TOGGLE", "切换");
+
+        put("glass", "磨砂玻璃");
+        put("glass-chat", "聊天磨砂");
+        put("glass-gui", "界面磨砂");
+        put("glass-list", "模块列表磨砂");
+        put("glass-notify", "通知磨砂");
+        put("glass-scoreboard", "公告栏磨砂");
+        put("glass-tab", "玩家列表磨砂");
+        put("glass-target", "目标血条磨砂");
+        put("tab-animation", "玩家列表动画");
+        put("smooth-list", "平滑列表");
+
+        put("scoreboard-scale", "公告栏大小");
+        put("scoreboard-rows", "公告栏行数");
+        put("scoreboard-offset-x", "公告栏横向偏移");
+        put("scoreboard-offset-y", "公告栏纵向偏移");
+
+        put("Caret", "箭头形");
+        put("CUSTOM", "自定义");
+        put("Fireball", "火球跳");
+        put("FRIEND_MANAGER", "好友管理");
+        put("LEGIT", "合法");
+        put("MYAU", "主题色");
+        put("PACKET", "数据包");
+        put("Ready", "就绪");
+        put("SINGLE", "单体");
+        put("SOFT", "柔和");
+        put("SOUP", "汤");
+        put("SECOND", "秒");
 
         load();
     }

@@ -55,36 +55,36 @@ public class Freeze extends Module {
 
         Packet<?> packet = event.getPacket();
 
-        // 认一下 S08（传送包）
+        // 记 S08 传送
         if (!this.delaying && packet instanceof S08PacketPlayerPosLook) {
             this.s08 = true;
         }
 
-        // 冲着玩家来的速度包
+        // 玩家速度包
         if (packet instanceof S12PacketEntityVelocity) {
             S12PacketEntityVelocity s12 = (S12PacketEntityVelocity) packet;
             if (s12.getEntityID() == mc.thePlayer.getEntityId()) {
-                // 刚传送完紧接着来的那一下速度，直接忽略
+                // 传送后第一个速度包忽略
                 if (this.s08) {
                     this.s08 = false;
                     return;
                 }
-                // 否则开始扣包
+                // 开始扣包
                 this.delaying = true;
             }
         }
         
-        // 受击了（带受击动画的实体状态包），也扣
+        // 受击状态包也扣
         if (packet instanceof S19PacketEntityStatus) {
             S19PacketEntityStatus s19 = (S19PacketEntityStatus) packet;
             if (s19.getEntity(mc.theWorld) != null && 
                 s19.getEntity(mc.theWorld).equals(mc.thePlayer) && 
-                s19.getOpCode() == 2) { // OpCode 2 就是受击动画
+                s19.getOpCode() == 2) { // OpCode 2 = 受击动画
                 this.delaying = true;
             }
         }
 
-        // 正在扣包期间，把相关的包都攒起来
+        // 扣包期间把相关包攒起来
         if (this.delaying && (packet instanceof S12PacketEntityVelocity 
                 || packet instanceof S32PacketConfirmTransaction 
                 || packet instanceof S08PacketPlayerPosLook)) {
@@ -106,13 +106,13 @@ public class Freeze extends Module {
         }
 
         if (event.getType() == EventType.POST) {
-            // 扣太久了就放出去，别把包憋死
+            // 扣太久就放出去
             if (this.delaying && ++this.timeout >= this.maxTimeout.getValue()) {
                 this.flush();
                 ChatUtil.sendFormatted(Myau.clientName + "&cFreeze timed out.");
             }
 
-            // 这一 tick 的传送标记清掉，下一 tick 重新认
+            // 每 tick 清传送标记
             this.s08 = false;
         }
     }

@@ -33,8 +33,7 @@ public abstract class MixinGuiPlayerTabOverlay {
     private boolean betterTabHasHeader;
     private boolean betterTabHasFooter;
 
-    // 玻璃面板是 header/rows/footer 三段拼起来的，三段各来一道描边就会在拼缝上留白线。
-    // 所以分段只铺磨砂底，等最后一段画完再按并集补一圈描边 + 柔光。
+    // 面板由 header/rows/footer 三段拼成，分段只铺磨砂底，最后按并集补描边 + 柔光
     private boolean betterTabGlassAny;
     private float betterTabMinX;
     private float betterTabMinY;
@@ -101,7 +100,7 @@ public abstract class MixinGuiPlayerTabOverlay {
     }
 
     /**
-     * 分段玻璃底。画成了就记下并集并返回 true（调用方不再画原样式）。
+     * 铺一段玻璃底，画成了记并集并返回 true（调用方不用再画原样式）。
      */
     private boolean betterTabGlass(int left, int top, int right, int bottom,
                                    float radiusTop, float radiusBottom,
@@ -198,7 +197,7 @@ public abstract class MixinGuiPlayerTabOverlay {
                 roundTop ? this.betterTabGlassRadius : 0.0F,
                 roundBottom ? this.betterTabGlassRadius : 0.0F,
                 roundTop, roundBottom)) {
-            // 服务端没给 footer 时，footer 那次回调不会来，收边只能在这里做
+            // 没有 footer 时那次回调不会来，收边在这儿做
             if (!this.betterTabHasFooter) {
                 this.betterTabFinishEdge();
             }

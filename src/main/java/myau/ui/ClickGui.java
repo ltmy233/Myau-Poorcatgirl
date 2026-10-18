@@ -7,7 +7,9 @@ import com.google.gson.JsonParser;
 import myau.Myau;
 import myau.module.Module;
 import myau.module.modules.*;
+import myau.ui.components.BindComponent;
 import myau.ui.components.CategoryComponent;
+import myau.ui.components.KeyPropertyComponent;
 import net.minecraft.client.gui.GuiScreen;
 import org.lwjgl.input.Mouse;
 
@@ -61,6 +63,7 @@ public class ClickGui extends GuiScreen {
         movementModules.add(Myau.moduleManager.getModule(Eagle.class));
         movementModules.add(Myau.moduleManager.getModule(NoJumpDelay.class));
         movementModules.add(Myau.moduleManager.getModule(AntiVoid.class));
+        movementModules.add(Myau.moduleManager.getModule(GodBridge.class));
 
         List<Module> renderModules = new ArrayList<>();
         renderModules.add(Myau.moduleManager.getModule(ESP.class));
@@ -277,6 +280,12 @@ public class ClickGui extends GuiScreen {
 
     public void keyTyped(char typedChar, int key) {
         if (key == 1) {
+            if (BindComponent.consumeEscape(typedChar, key)) {
+                return;
+            }
+            if (KeyPropertyComponent.consumeEscape(typedChar, key)) {
+                return;
+            }
             this.mc.displayGuiScreen(null);
         } else {
             Iterator<CategoryComponent> btnCat = categoryList.iterator();

@@ -55,6 +55,8 @@ public class PotionHUD extends Module {
     public final BooleanProperty editPosition = new BooleanProperty("edit-position", false);
     public final BooleanProperty excludePermanent = new BooleanProperty("exclude-permanent", false);
     public final BooleanProperty drawBackground = new BooleanProperty("draw-background", false);
+    public final BooleanProperty backgroundBlur = new BooleanProperty("background-blur", true);
+    public final BooleanProperty bar = new BooleanProperty("bar", true);
     public final BooleanProperty textShadow = new BooleanProperty("text-shadow", true);
     public final TextProperty potionBlacklist = new TextProperty("potion-blacklist", "");
 
@@ -122,6 +124,26 @@ public class PotionHUD extends Module {
 
     public void resetPosition() {
         setRelativePosition(DEFAULT_RELATIVE_X, DEFAULT_RELATIVE_Y);
+    }
+
+    @Override
+    public void writeConfig(com.google.gson.JsonObject object) {
+        if (!Float.isNaN(this.relativePosX) && !Float.isNaN(this.relativePosY)) {
+            object.addProperty("pos-x", this.relativePosX);
+            object.addProperty("pos-y", this.relativePosY);
+        }
+    }
+
+    @Override
+    public void readConfig(com.google.gson.JsonObject object) {
+        if (object.has("pos-x") && object.has("pos-y")) {
+            float x = object.get("pos-x").getAsFloat();
+            float y = object.get("pos-y").getAsFloat();
+            if (!Float.isNaN(x) && !Float.isNaN(y)) {
+                this.relativePosX = x;
+                this.relativePosY = y;
+            }
+        }
     }
 
     private void render(boolean editing) {
@@ -192,7 +214,7 @@ public class PotionHUD extends Module {
         float labelWidth = scaledWidth(label);
         float durationWidth = durationText.isEmpty() ? 0.0F : scaledWidth(durationText);
         float gapWidth = durationWidth > 0.0F ? scaledWidth(" ") : 0.0F;
-        return new PotionEntry(label, durationText, labelWidth, durationWidth, gapWidth, duration, potion.getLiquidColor());
+        return new PotionEntry(label, durationText, labelWidth, durationWidth, gapWidth, duration, brighten(potion.getLiquidColor(), 0.38F));
     }
 
     private boolean isBlacklisted(String potionName) {
@@ -259,17 +281,66 @@ public class PotionHUD extends Module {
             float textY = rowTop + state.metrics.textTopPadding - state.metrics.textTopOffset;
             float timerX = rowLeft + entry.labelWidth + entry.gapWidth;
 
-            if (this.drawBackground.getValue()) {
-                GlStateManager.enableBlend();
-                GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-                GlStateManager.disableTexture2D();
-                RenderUtil.drawRect(backgroundLeft / s, rowTop / s, backgroundRight / s, backgroundBottom / s, BACKGROUND_COLOR);
-                GlStateManager.enableTexture2D();
+            if (i == 0) {
+                state.cascadeTop = rowTop;
+                state.cascadeLeft = backgroundLeft;
+            }
+            state.cascadeBottom = Math.max(state.cascadeBottom, backgroundBottom);
+            state.cascadeRight = Math.max(state.cascadeRight, backgroundRight);
+            HUD themeHud = HUD.get();
+            java.awt.Color themeColor = themeHud != null ? themeHud.getColor(System.currentTimeMillis(), i) : null;
+            int rowColor = themeColor != null ? (themeColor.getRGB() & 0xFFFFFF) | 0xFF000000 : entry.color;
+
+            if (this.drawBackground.getValue() || this.backgroundBlur.getValue()) {
+                float bgBlurWidth = (backgroundRight - backgroundLeft) / s;
+                float bgBlurHeight = (backgroundBottom - rowTop) / s;
+                boolean rounded = themeHud != null && themeHud.rounded.getValue();
+                float radius = rounded
+                        ? Math.min(themeHud.cornerRadius.getValue(), Math.min(bgBlurWidth, bgBlurHeight) * 0.5F)
+                        : 0.0F;
+                boolean glassDrawn = false;
+                if (this.backgroundBlur.getValue()) {
+                    ScaledResolution glassResolution = new ScaledResolution(mc);
+                    glassDrawn = myau.util.FrostedGlass.draw(backgroundLeft / s, rowTop / s, bgBlurWidth, bgBlurHeight, radius,
+                            glassResolution.getScaledWidth(), glassResolution.getScaledHeight(), 1.0F, true);
+                }
+                if (!glassDrawn) {
+                    GlStateManager.enableBlend();
+                    GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                    GlStateManager.disableTexture2D();
+                    if (rounded) {
+                        RenderUtil.drawRoundedRect(backgroundLeft / s, rowTop / s, bgBlurWidth, bgBlurHeight, radius,
+                                BACKGROUND_COLOR, true, true, true, true);
+                    } else {
+                        RenderUtil.drawRect(backgroundLeft / s, rowTop / s, backgroundRight / s, backgroundBottom / s, BACKGROUND_COLOR);
+                    }
+                    GlStateManager.enableTexture2D();
+                }
             }
 
-            mc.fontRendererObj.drawString(entry.label, rowLeft / s, textY / s, entry.color, this.textShadow.getValue());
+            mc.fontRendererObj.drawString(entry.label, rowLeft / s, textY / s, rowColor, this.textShadow.getValue());
             if (!entry.durationText.isEmpty()) {
                 mc.fontRendererObj.drawString(entry.durationText, timerX / s, textY / s, TIMER_COLOR, this.textShadow.getValue());
+            }
+            if (this.bar.getValue()) {
+                int barColor = rowColor;
+                int barDark = (barColor & 16579836) >> 2 | barColor & 0xFF000000;
+                float barTop = (rowTop + state.metrics.textTopPadding) / s - 1.0F;
+                float barBottom = barTop + (float) mc.fontRendererObj.FONT_HEIGHT + 2.0F;
+                float barLeftEdge = backgroundLeft / s;
+                float barRightEdge = backgroundRight / s;
+                boolean shadow = this.textShadow.getValue();
+                if (horizontalAlignMode == 2) {
+                    RenderUtil.drawRect(barRightEdge - 2.0F, barTop, barRightEdge - 1.0F, barBottom, barColor);
+                    if (shadow) {
+                        RenderUtil.drawRect(barRightEdge - 1.0F, barTop, barRightEdge, barBottom, barDark);
+                    }
+                } else {
+                    if (shadow) {
+                        RenderUtil.drawRect(barLeftEdge, barTop, barLeftEdge + 1.0F, barBottom, barColor);
+                    }
+                    RenderUtil.drawRect(barLeftEdge + 1.0F, barTop, barLeftEdge + 2.0F, barBottom, shadow ? barDark : barColor);
+                }
             }
 
             minX = Math.min(minX, backgroundLeft);
@@ -420,6 +491,10 @@ public class PotionHUD extends Module {
         private final LayoutMetrics metrics;
         private final List<PotionEntry> entries;
         private final float maxWidth;
+        private float cascadeTop;
+        private float cascadeLeft;
+        private float cascadeRight;
+        private float cascadeBottom;
 
         private RenderState(LayoutMetrics metrics, List<PotionEntry> entries, float maxWidth) {
             this.metrics = metrics;
@@ -440,6 +515,16 @@ public class PotionHUD extends Module {
             this.right = right;
             this.bottom = bottom;
         }
+    }
+
+    private static int brighten(int color, float amount) {
+        int r = color >> 16 & 0xFF;
+        int g = color >> 8 & 0xFF;
+        int b = color & 0xFF;
+        r = (int) (r + (255 - r) * amount);
+        g = (int) (g + (255 - g) * amount);
+        b = (int) (b + (255 - b) * amount);
+        return 0xFF000000 | r << 16 | g << 8 | b;
     }
 
     private static String toRomanNumeral(int value) {
@@ -539,6 +624,9 @@ public class PotionHUD extends Module {
                 this.lastActualX = this.actualX;
                 this.lastActualY = this.actualY;
             }
+        }
+
+        private void applyDragSnap(ScaledResolution resolution) {
         }
 
         @Override

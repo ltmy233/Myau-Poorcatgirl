@@ -175,7 +175,7 @@ public class NameTags extends Module {
                             float bgY = (float) (-mc.fontRendererObj.FONT_HEIGHT) - 3.0F;
                             float bgWidth = (float) width + 6.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
                             float bgHeight = (float) mc.fontRendererObj.FONT_HEIGHT + 5.0F + (this.shadow.getValue() ? 1.0F : 0.0F);
-                            // 名牌在 3D 空间里画，FrostedGlass 自己会把这四角投到屏幕坐标去
+                            // 在 3D 空间里画，FrostedGlass 会自己投到屏幕坐标
                             HUD hud = HUD.get();
                             boolean glassDrawn = false;
                             if (hud == null || hud.glassOn(hud.glassTarget)) {

@@ -180,7 +180,7 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback {
         }
     }
 
-    // 把背景图调出来画上，视频壁纸还没就绪就先用静态图顶着
+    // 背景图：视频壁纸没就绪就用静态图
     private void drawBackground() {
         ScaledResolution sr = new ScaledResolution(mc);
         int w = sr.getScaledWidth();
@@ -252,7 +252,7 @@ public class MyauMainMenu extends GuiScreen implements GuiYesNoCallback {
             myau.util.RenderUtil.drawRoundedRect(this.glassX, this.glassY, this.glassW, this.glassH, 12.0F, 0x59000000);
         }
 
-        // 标题，能用渲染器就交给它，不行再退回老的硬画
+        // 标题：优先渲染器，失败退回手画
         if (!TitleRenderer.render(this.width, this.height)) {
             String title = "Poorcatgirl";
             GlStateManager.pushMatrix();

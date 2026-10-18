@@ -25,7 +25,7 @@ public final class WallpaperManager {
     private static final WallpaperManager INSTANCE = new WallpaperManager();
     /** 就这一个壁纸，不做轮换。 */
     private static final String FIXED_ID = "nachoneko";
-    /** 打包进 jar 的壁纸目录，磁盘上缺了就自动释放一份出来。 */
+    /** 打包进 jar 的壁纸，磁盘缺了自动释放。 */
     private static final String BUNDLE_PATH = "assets/myau/wallpapers/nachoneko";
     private static final String BUNDLE_FFMPEG = "assets/myau/bin/ffmpeg.exe";
 

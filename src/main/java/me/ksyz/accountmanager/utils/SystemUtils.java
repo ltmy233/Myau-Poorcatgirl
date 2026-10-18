@@ -17,7 +17,7 @@ public class SystemUtils {
             Object object = desktop.getMethod("getDesktop", new Class[0]).invoke(null);
             desktop.getMethod("browse", new Class[]{URI.class}).invoke(object, url);
         } catch (Exception exception) {
-            // 机器上没装 java.awt.Desktop，就算了
+            // 没装 java.awt.Desktop 就算了
         }
     }
 
@@ -25,7 +25,7 @@ public class SystemUtils {
         try {
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(text), null);
         } catch (Exception exception) {
-            // 剪贴板被别的程序占着或没有，就不强求了
+            // 剪贴板不可用就不强求
         }
     }
 }

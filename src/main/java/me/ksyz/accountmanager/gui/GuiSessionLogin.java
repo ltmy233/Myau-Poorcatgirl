@@ -71,22 +71,22 @@ public class GuiSessionLogin extends GuiScreen {
             try {
                 String username, uuid, token, session = sessionField.getText();
 
-                if (session.contains(":")) { // 整条贴进来了（ign:uuid:token）
-                    // 拆开分别用
+                if (session.contains(":")) { // ign:uuid:token 整条
+                    // 拆开用
                     username = session.split(":")[0];
                     uuid = session.split(":")[1];
                     token = session.split(":")[2];
                 } else { // 只有一个 token
-                    // 拿它查一下 profile
+                    // 查 profile
                     HttpURLConnection c = (HttpURLConnection) new URL("https://api.minecraftservices.com/minecraft/profile/").openConnection();
                     c.setRequestProperty("Content-type", "application/json");
                     c.setRequestProperty("Authorization", "Bearer " + sessionField.getText());
                     c.setDoOutput(true);
 
-                    // 响应按 JSON 读出来
+                    // 响应按 JSON 读
                     JsonObject json = new JsonParser().parse(IOUtils.toString(c.getInputStream())).getAsJsonObject();
 
-                    // 名字和 uuid 就在这儿
+                    // 名字和 uuid 在这儿
                     username = json.get("name").getAsString();
                     uuid = json.get("id").getAsString();
                     token = session;

@@ -15,6 +15,7 @@ import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,8 +30,18 @@ public abstract class MixinGuiIngame {
 
     private int betterScoreboardRows;
     private boolean betterScoreboardTitleGlass;
+    private boolean betterScoreboardPushed;
+    private static float betterScoreboardLastScale = 1.0F;
+    private static int betterScoreboardLastOx = 0;
+    private static int betterScoreboardLastOy = 0;
+    private static int betterScoreboardLastRows = 15;
 
-    // 记分板背板是"行底 + 标题底"两段拼的，分段只铺磨砂底，等标题画完再统一收边
+    private static int betterScoreboardRowLimit(HUD hud) {
+        if (hud == null || !hud.isEnabled()) return 15;
+        return Math.max(5, Math.min(hud.scoreboardRows.getValue(), 15));
+    }
+
+    // 记分板背板分两段铺磨砂底，画完统一收边
     private boolean betterScoreboardGlassAny;
     private float betterScoreboardMinX;
     private float betterScoreboardMinY;
@@ -47,7 +58,7 @@ public abstract class MixinGuiIngame {
         Scoreboard scoreboard = objective.getScoreboard();
         java.util.List<Score> scores = new java.util.ArrayList<>(scoreboard.getSortedScores(objective));
         scores.removeIf(score -> score.getPlayerName().startsWith("#"));
-        if (scores.size() > 15) scores = new java.util.ArrayList<>(scores.subList(scores.size() - 15, scores.size()));
+        if (scores.size() > 15) scores = new java.util.ArrayList<>(scores.subList(Math.max(0, scores.size() - 15), scores.size()));
 
         int maxWidth = Minecraft.getMinecraft().fontRendererObj.getStringWidth(objective.getDisplayName());
         for (Score score : scores) {
@@ -58,6 +69,8 @@ public abstract class MixinGuiIngame {
         }
 
         int lineHeight = Minecraft.getMinecraft().fontRendererObj.FONT_HEIGHT;
+        int rowLimit = betterScoreboardRowLimit(hud);
+        if (scores.size() > rowLimit) scores = new java.util.ArrayList<>(scores.subList(scores.size() - rowLimit, scores.size()));
         int rowCount = scores.size();
         int rowBase = resolution.getScaledHeight() / 2 + rowCount * lineHeight / 3;
         int top = rowBase - (rowCount + 1) * lineHeight - 1;
@@ -70,11 +83,11 @@ public abstract class MixinGuiIngame {
             myau.util.FrostedGlass.drawEdge(left, top, right - left, bottom - top, radius, 1.0F);
         } else {
             RenderUtil.drawRoundedRect(left, top, right - left, bottom - top, radius,
-                    new java.awt.Color(58, 62, 68, 108).getRGB(), true, true, true, true);
+                    new java.awt.Color(58, 62, 68, 150).getRGB(), true, true, true, true);
         }
     }
 
-    /** 两段共用：铺一块不带描边的磨砂底，画成记并集返回 true。 */
+    /** 铺一段不带描边的磨砂底，并记录并集。 */
     private boolean betterScoreboardGlass(int left, int top, int right, int bottom, HUD hud,
                                           float radiusTop, float radiusBottom,
                                           boolean edgeTop, boolean edgeBottom) {
@@ -132,7 +145,63 @@ public abstract class MixinGuiIngame {
         if (hud != null && hud.rounded.getValue()) {
             this.betterScoreboardRadius = hud.cornerRadius.getValue();
         }
+        // 记分板自定义：右上锚点缩放 + 偏移
+        float scale = 1.0F;
+        int userOx = 0;
+        int userOy = 0;
+        if (hud != null && hud.isEnabled()) {
+            scale = hud.scoreboardScale.getValue();
+            userOx = hud.scoreboardOffsetX.getValue();
+            userOy = hud.scoreboardOffsetY.getValue();
+        }
+        if (Math.abs(scale - betterScoreboardLastScale) > 0.001F
+                || userOx != betterScoreboardLastOx || userOy != betterScoreboardLastOy
+                || betterScoreboardRowLimit(hud) != betterScoreboardLastRows) {
+            betterScoreboardLastScale = scale;
+            betterScoreboardLastOx = userOx;
+            betterScoreboardLastOy = userOy;
+            betterScoreboardLastRows = betterScoreboardRowLimit(hud);
+        }
+        if (Math.abs(scale - 1.0F) > 0.001F || userOx != 0 || userOy != 0) {
+            float anchorX = resolution.getScaledWidth();
+            GlStateManager.pushMatrix();
+            GlStateManager.translate(anchorX - anchorX * scale + (float) userOx, (float) userOy, 0.0F);
+            if (Math.abs(scale - 1.0F) > 0.001F) {
+                GlStateManager.scale(scale, scale, 1.0F);
+            }
+            this.betterScoreboardPushed = true;
+        } else {
+            this.betterScoreboardPushed = false;
+        }
         this.drawScoreboardPanel(objective, resolution, hud);
+    }
+
+    @Inject(method = "renderScoreboard", at = @At("RETURN"))
+    private void betterScoreboardPop(ScoreObjective objective, ScaledResolution resolution, CallbackInfo ci) {
+        if (this.betterScoreboardPushed) {
+            this.betterScoreboardPushed = false;
+            GlStateManager.popMatrix();
+        }
+    }
+
+    // 行数改由 HUD scoreboard-rows 控制，在 getSortedScores 源头截断
+    @Redirect(
+            method = "renderScoreboard",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/scoreboard/Scoreboard;getSortedScores(Lnet/minecraft/scoreboard/ScoreObjective;)Ljava/util/Collection;",
+                    ordinal = 0,
+                    remap = false
+            )
+    )
+    private java.util.Collection<Score> betterScoreboardSortedScores(Scoreboard scoreboard, ScoreObjective objective) {
+        int n = betterScoreboardRowLimit(HUD.get());
+        java.util.List<Score> all = new java.util.ArrayList<>();
+        for (Score score : scoreboard.getSortedScores(objective)) {
+            if (!score.getPlayerName().startsWith("#")) all.add(score);
+        }
+        if (all.size() > n) all = new java.util.ArrayList<>(all.subList(all.size() - n, all.size()));
+        return all;
     }
 
     @Redirect(

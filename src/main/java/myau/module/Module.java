@@ -1,5 +1,6 @@
 package myau.module;
 
+import com.google.gson.JsonObject;
 import myau.Myau;
 import myau.module.modules.HUD;
 import myau.util.KeyBindUtil;
@@ -49,6 +50,12 @@ public abstract class Module {
 
     public String[] getSuffix() {
         return new String[0];
+    }
+
+    public void writeConfig(JsonObject object) {
+    }
+
+    public void readConfig(JsonObject object) {
     }
 
     public boolean isEnabled() {

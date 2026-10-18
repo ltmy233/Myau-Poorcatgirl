@@ -413,14 +413,14 @@ public class AutoBlockIn extends Module {
 
 
     private boolean tryPlaceOnBlock(BlockPos supportBlock, Vec3 eye, double reach, BlockPos targetPos) {
-        // 支撑块的 6 个面挨个试
+        // 支撑块 6 个面挨个试
         for (EnumFacing facing : EnumFacing.values()) {
             BlockPos placementPos = supportBlock.offset(facing);
             
-            // 这一面得正好是要放的目标位置，不然白试
+            // 这一面要正好是目标位置
             if (!placementPos.equals(targetPos)) continue;
             
-            // 在这个面上撒一批候选点击点
+            // 面上撒一批候选点
             int n = (int) Math.round(1 / STEP);
             
             for (int r = 0; r <= n; r++) {
@@ -484,7 +484,7 @@ public class AutoBlockIn extends Module {
                 Vec3 center = new Vec3(support.getX() + 0.5, support.getY() + 0.5, support.getZ() + 0.5);
                 if (eye.distanceTo(center) > reach) continue;
                 
-                // 逐个点试放
+                // 逐点试放
                 int n = (int) Math.round(1 / STEP);
                 for (int r = 0; r <= n; r++) {
                     double v = r * STEP + (Math.random() * JIT * 2 - JIT);

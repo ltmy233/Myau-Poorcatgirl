@@ -1,7 +1,7 @@
 package myau.event.types;
 
 /**
- * 带类型的事件能用的几个类型。
+ * 带类型的事件用的类型枚举。
  *
  * @author DarkMagician6
  * @since August 27, 2013

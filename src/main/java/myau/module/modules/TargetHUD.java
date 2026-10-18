@@ -275,7 +275,7 @@ public class TargetHUD extends Module {
         float y = resolution.getScaledHeight() * 0.5F + 15.0F + offY.getValue();
         int alpha = Math.max(1, Math.round(opacity * 255.0F));
         int accent = getTargetColor(ravenTarget).getRGB() & 0xFFFFFF;
-        // 卡片底改玻璃：阴影一律不再画，改由 FrostedGlass 出白色细描边 + 主题色柔光
+        // 卡片底用玻璃，阴影不再画，描边和柔光由 FrostedGlass 出
         HUD hud = HUD.get();
         boolean glassDrawn = false;
         if (hud == null || hud.glassOn(hud.glassTarget)) {

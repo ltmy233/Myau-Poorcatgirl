@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class BindComponent implements Component {
     private boolean isBinding;
+    private static BindComponent escapeOwner;
     private final ModuleComponent parentModule;
     private int offsetY;
     private int x;
@@ -51,11 +52,16 @@ public class BindComponent implements Component {
             
             if (button == 0) {
                 this.isBinding = false;
-                return;
-            }
+            } else {
             
-            this.parentModule.mod.setKey(keyIndex);
-            this.isBinding = false;
+                this.parentModule.mod.setKey(keyIndex);
+                this.isBinding = false;
+            }
+        }
+        if (this.isBinding) {
+            escapeOwner = this;
+        } else if (escapeOwner == this) {
+            escapeOwner = null;
         }
     }
 
@@ -68,11 +74,8 @@ public class BindComponent implements Component {
     public void keyTyped(char chatTyped, int keyCode) {
         if (this.isBinding) {
             if (keyCode == 1) {
-                this.isBinding = false;
-                return;
-            }
-            
-            if (keyCode == 11) { 
+                this.parentModule.mod.setKey(0);
+            } else if (keyCode == 11) {
                 if (this.parentModule.mod instanceof GuiModule) {
                     this.parentModule.mod.setKey(54);
                 } else {
@@ -83,7 +86,20 @@ public class BindComponent implements Component {
             }
 
             this.isBinding = false;
+            if (escapeOwner == this) {
+                escapeOwner = null;
+            }
         }
+    }
+
+    public static boolean consumeEscape(char typedChar, int key) {
+        BindComponent owner = escapeOwner;
+        if (owner == null) {
+            return false;
+        }
+        escapeOwner = null;
+        owner.keyTyped(typedChar, key);
+        return true;
     }
 
     @Override

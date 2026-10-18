@@ -5,8 +5,7 @@ import myau.event.types.Priority;
 import java.lang.annotation.*;
 
 /**
- * 打上它，EventManager 就知道这个方法该登记进来收事件。
- * 优先级也是靠它给的。
+ * 打上它，EventManager 就会登记这个方法收事件；优先级由 value 指定。
  *
  * @author DarkMagician6
  * @see Priority

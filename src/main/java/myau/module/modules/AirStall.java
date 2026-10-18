@@ -8,6 +8,7 @@ import myau.events.PlayerUpdateEvent;
 import myau.events.UpdateEvent;
 import myau.events.TickEvent;
 import myau.module.Module;
+import myau.property.properties.BooleanProperty;
 import net.minecraft.client.Minecraft;
 
 public class AirStall extends Module {
@@ -16,6 +17,8 @@ public class AirStall extends Module {
     private boolean wasFlying;
     private float frozenYaw;
     private float frozenPitch;
+
+    public final BooleanProperty lockRotation = new BooleanProperty("lock-rotation", false);
 
     public AirStall() {
         super("AirStall", false);
@@ -63,6 +66,7 @@ public class AirStall extends Module {
     @EventTarget(Priority.HIGHEST)
     public void onUpdate(UpdateEvent event) {
         if (!this.isEnabled() || mc.thePlayer == null || event.getType() != myau.event.types.EventType.PRE) return;
+        if (!this.lockRotation.getValue()) return;
         event.setRotation(this.frozenYaw, this.frozenPitch, 7);
         event.setPervRotation(this.frozenYaw, 7);
     }

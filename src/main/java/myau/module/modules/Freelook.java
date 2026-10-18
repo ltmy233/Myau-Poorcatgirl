@@ -45,8 +45,7 @@ public class Freelook extends Module {
     @Override
     public void onEnabled() {
         instance = this;
-        // 按住/切换这套逻辑归内部快捷键管。
-        // 模块要是在同一个键上绑了绑定，这一 tick 就会把模块和视角一起翻个面。
+        // 快捷键归内部逻辑管，解掉模块自身绑定，免得同一键把模块和视角一起翻面
         this.setKey(0);
         this.prevKeyState = false;
     }

@@ -16,6 +16,7 @@ public class KeyPropertyComponent implements Component {
     private final IntProperty property;
     private final ModuleComponent parentModule;
     private boolean binding;
+    private static KeyPropertyComponent escapeOwner;
     private int offsetY;
     private int x;
     private int y;
@@ -56,6 +57,11 @@ public class KeyPropertyComponent implements Component {
             this.property.setValue(button - 100);
             this.binding = false;
         }
+        if (this.binding) {
+            escapeOwner = this;
+        } else if (escapeOwner == this) {
+            escapeOwner = null;
+        }
     }
 
     @Override
@@ -66,11 +72,25 @@ public class KeyPropertyComponent implements Component {
     public void keyTyped(char chatTyped, int keyCode) {
         if (!this.binding) return;
         if (keyCode == 1) {
+            this.property.setValue(0);
             this.binding = false;
         } else {
             this.property.setValue(keyCode == 11 ? 0 : keyCode);
             this.binding = false;
         }
+        if (escapeOwner == this) {
+            escapeOwner = null;
+        }
+    }
+
+    public static boolean consumeEscape(char typedChar, int key) {
+        KeyPropertyComponent owner = escapeOwner;
+        if (owner == null) {
+            return false;
+        }
+        escapeOwner = null;
+        owner.keyTyped(typedChar, key);
+        return true;
     }
 
     @Override

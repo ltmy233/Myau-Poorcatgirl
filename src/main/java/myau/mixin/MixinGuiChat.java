@@ -42,7 +42,7 @@ public abstract class MixinGuiChat {
         float height = (float) (bottom - top);
         float radius = Math.min(5.0F, height * 0.5F);
         ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
-        // 输入条做成实心玻璃；开关关了或画不出来就还是原来那块底
+        // 输入条用玻璃；关了或画不出来就还是原来的底
         myau.module.modules.HUD hud = myau.module.modules.HUD.get();
         boolean useGlass = hud == null || hud.glassOn(hud.glassGui);
         if (!useGlass || !myau.util.FrostedGlass.draw((float) left, (float) top, width, height, radius,
