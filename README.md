@@ -1,7 +1,8 @@
 # MyauPoorcatgirl
 
 Minecraft 1.8.9 Forge 客户端。
-没门，不相信自己去查。
+jar 体积这么大是因为塞了主界面的动态背景mp4（1080P 60FPS）
+没门 不相信自己去查 自己build去。
 
 ## 构建
 
@@ -9,7 +10,7 @@ Minecraft 1.8.9 Forge 客户端。
 ./gradlew build
 ```
 
-输出 `build/libs/Myau-cat-v2.3.jar`
+输出 `build/libs/Myau-cat-v2.4.jar`
 
 ## 声明
 
@@ -23,4 +24,6 @@ ltmy_233
 
 ## 鸣谢
 
-DeepSeek
+DeepSeekv4.1
+ChatGPT5.6sol
+Opus5.5
