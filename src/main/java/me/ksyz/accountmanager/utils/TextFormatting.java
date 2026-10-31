@@ -1,11 +1,5 @@
 package me.ksyz.accountmanager.utils;
 
-/*
- * This file is derived from https://github.com/ksyzov/AccountManager.
- * Originally licensed under the GNU LGPL.
- *
- * This modified version is licensed under the GNU GPL v3.
- */
 public enum TextFormatting {
     BLACK('0', -16777216),
     DARK_BLUE('1', -16777046),

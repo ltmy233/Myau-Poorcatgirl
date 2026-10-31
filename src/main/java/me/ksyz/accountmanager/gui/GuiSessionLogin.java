@@ -16,12 +16,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-/*
- * This file is derived from https://github.com/ksyzov/AccountManager.
- * Originally licensed under the GNU LGPL.
- *
- * This modified version is licensed under the GNU GPL v3.
- */
 public class GuiSessionLogin extends GuiScreen {
     private GuiScreen previousScreen;
 

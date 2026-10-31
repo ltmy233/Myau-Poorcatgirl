@@ -9,21 +9,34 @@ import net.minecraftforge.common.MinecraftForge;
 
 import javax.net.ssl.SSLContext;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Optional;
 
-/*
- * This file is derived from https://github.com/ksyzov/AccountManager.
- * Originally licensed under the GNU LGPL.
- *
- * This modified version is licensed under the GNU GPL v3.
- */
 public class AccountManager {
     private static final Minecraft mc = Minecraft.getMinecraft();
-    private static final File file = new File(mc.mcDataDir, "openmyau.accounts.json");
+    private static final File file = new File(mc.mcDataDir, "openpoorcatgirl.accounts.json");
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public static final ArrayList<Account> accounts = new ArrayList<>();
+
+    static {
+        if (!file.exists()) {
+            File[] legacyFiles = mc.mcDataDir.listFiles((dir, name) ->
+                    name.startsWith("open") && name.endsWith(".accounts.json") && !name.equals(file.getName()));
+            if (legacyFiles != null && legacyFiles.length > 0) {
+                try {
+                    Files.move(legacyFiles[0].toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException moveError) {
+                    try {
+                        Files.copy(legacyFiles[0].toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException ignored) {
+                    }
+                }
+            }
+        }
+    }
 
     public static void init() {
         SSLContext ignored = SSLUtils.getSSLContext();
@@ -33,11 +46,11 @@ public class AccountManager {
             try {
                 if (file.getParentFile().exists() || file.getParentFile().mkdirs()) {
                     if (file.createNewFile()) {
-                        System.out.print("Successfully created openmyau.accounts.json!");
+                        System.out.print("Successfully created openpoorcatgirl.accounts.json!");
                     }
                 }
             } catch (IOException e) {
-                System.err.print("Couldn't create openmyau.accounts.json!");
+                System.err.print("Couldn't create openpoorcatgirl.accounts.json!");
             }
         }
     }
@@ -63,7 +76,7 @@ public class AccountManager {
                 }
             }
         } catch (FileNotFoundException e) {
-            System.err.print("Couldn't find openmyau.accounts.json!");
+            System.err.print("Couldn't find openpoorcatgirl.accounts.json!");
         }
     }
 
@@ -84,7 +97,7 @@ public class AccountManager {
             printWriter.println(gson.toJson(jsonArray));
             printWriter.close();
         } catch (IOException e) {
-            System.err.print("Couldn't save openmyau.accounts.json!");
+            System.err.print("Couldn't save openpoorcatgirl.accounts.json!");
         }
     }
 }

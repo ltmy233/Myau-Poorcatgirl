@@ -1,11 +1,5 @@
 package me.ksyz.accountmanager.auth;
 
-/*
- * This file is derived from https://github.com/ksyzov/AccountManager.
- * Originally licensed under the GNU LGPL.
- *
- * This modified version is licensed under the GNU GPL v3.
- */
 public class Account {
     private String refreshToken;
     private String accessToken;

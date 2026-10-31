@@ -79,14 +79,15 @@ dependencies {
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
 }
 // Essential 只在编译时用到，给 MixinGameProfileManager 那个兼容混入用
-val essentialForCompile: File? = sequenceOf(
-    file("libs/essential-compile.jar"),
-    *fileTree("D:/PCL/PCL/versions") { include("**/essential/Essential*.jar") }.files.toTypedArray()
-).firstOrNull { it.isFile }
-if (essentialForCompile != null) {
-    dependencies { compileOnly(files(essentialForCompile)) }
+// 想编译这个兼容混入，把 Essential (forge_1.8.9).jar 放到 libs/essential-compile.jar
+val essentialJar: File = file("libs/essential-compile.jar")
+if (essentialJar.isFile) {
+    dependencies { compileOnly(files(essentialJar)) }
 } else {
-    println("WARNING: Essential jar not found, compat mixin will not compile")
+    println("WARNING: libs/essential-compile.jar not found, Essential compat mixin is excluded from the build")
+    sourceSets.main {
+        java.exclude("poorcatgirl/mixin/MixinGameProfileManager.java")
+    }
 }
 // Sidebar Revamp 只在编译时用到，给 MixinGuiSidebar 的记分板圆角用
 if (file("libs/sidebar-revamp.jar").isFile) {
