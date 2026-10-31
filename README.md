@@ -16,7 +16,7 @@ jar 体积这么大是因为塞了主界面的动态背景mp4（1080P 60FPS）
 
 本项目仅供学习交流，禁止倒卖。
 
-录制视频请附带本项目链接 https://github.com/ltmy233/Poorcatgirl 谢谢。
+录制视频请附带本项目链接 https://github.com/ltmy233/Myau-Poorcatgirl 谢谢。
 
 ## 作者
 
